@@ -74,6 +74,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { DataTable } from "@/components/DataTable";
+import { ColumnDef } from "@tanstack/react-table";
 
 // Mock data for expenses
 const expensesData = [
@@ -103,35 +105,62 @@ const pieChartData = [
   { name: "Marketing", value: 1000 },
 ];
 
+const sortedPieChartData = pieChartData.sort((a, b) => b.value - a.value);
+
+const chartColors = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))",
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+];
+
 const chartConfig = {
   expenses: {
     label: "Expenses",
-    color: "hsl(var(--primary))",
   },
   Inventory: {
     label: "Inventory",
-    color: "hsl(var(--chart-1))",
   },
   Rent: {
     label: "Rent",
-    color: "hsl(var(--chart-2))",
   },
   Utilities: {
     label: "Utilities",
-    color: "hsl(var(--chart-3))",
   },
   Salaries: {
     label: "Salaries",
-    color: "hsl(var(--chart-4))",
   },
   Marketing: {
     label: "Marketing",
-    color: "hsl(var(--chart-5))",
   },
 } satisfies ChartConfig;
 
 export default function Expenses() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const columns: ColumnDef<(typeof expensesData)[0]>[] = [
+    {
+      accessorKey: "category",
+      header: "Category",
+    },
+    {
+      accessorKey: "amount",
+      header: "Amount",
+      cell: ({ row }) => {
+        const amount = parseFloat(row.getValue("amount"));
+        const formatted = new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+        }).format(amount);
+
+        return <div className="font-medium">{formatted}</div>;
+      },
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+    },
+  ];
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -292,9 +321,9 @@ export default function Expenses() {
                     <Area
                       type="natural"
                       dataKey="expenses"
-                      fill="hsl(var(--chart-2))"
+                      fill="hsl(var(--chart-1))"
                       fillOpacity={0.4}
-                      stroke="hsl(var(--chart-2))"
+                      stroke="hsl(var(--chart-1))"
                     />
                   </AreaChart>
                 </ChartContainer>
@@ -320,17 +349,20 @@ export default function Expenses() {
                 <CardDescription>Current Month</CardDescription>
               </CardHeader>
               <CardContent className="flex-1 pb-0">
-                <ChartContainer config={chartConfig}>
+                <ChartContainer config={chartConfig} className="h-full w-full">
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie data={pieChartData} dataKey="value" nameKey="name">
-                      {pieChartData.map((entry, index) => (
+                    <Pie
+                      data={sortedPieChartData}
+                      dataKey="value"
+                      nameKey="name"
+                      startAngle={90}
+                      endAngle={-270}
+                    >
+                      {sortedPieChartData.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
-                          fill={
-                            chartConfig[entry.name as keyof typeof chartConfig]
-                              .color
-                          }
+                          fill={chartColors[index % chartColors.length]}
                         />
                       ))}
                     </Pie>
@@ -358,24 +390,11 @@ export default function Expenses() {
               <CardDescription>A list of your recent expenses</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Amount</TableHead>
-                    <TableHead>Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {expensesData.map((expense) => (
-                    <TableRow key={expense.id}>
-                      <TableCell>{expense.category}</TableCell>
-                      <TableCell>${expense.amount}</TableCell>
-                      <TableCell>{expense.date}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <DataTable
+                columns={columns}
+                data={expensesData}
+                filterColumn="category"
+              />
             </CardContent>
           </Card>
         </main>

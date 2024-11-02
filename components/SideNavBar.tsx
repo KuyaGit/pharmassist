@@ -32,9 +32,6 @@ export function SideNavBar() {
   const [view, setView] = useState<"retail" | "wholesale">("retail");
   const { isCollapsed, toggleCollapse } = useSidebar();
 
-  // Remove the useEffect and toggleCollapse function here
-  // They are now handled in the SidebarContext
-
   return (
     <div
       className={cn(
@@ -131,7 +128,7 @@ export function SideNavBar() {
           </Tabs>
         </div>
         <div className="flex-1">
-          <nav className="grid items-start px-2 text-sm font-medium md:px-4">
+          <nav className="grid items-start px-2 transition-all duration-300 overflow-hidden text-sm font-medium md:px-4">
             <TooltipProvider>
               {[
                 { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -148,7 +145,7 @@ export function SideNavBar() {
                       href={href}
                       className={cn(
                         "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
-                        pathname === href
+                        pathname.startsWith(href)
                           ? "bg-background text-foreground font-semibold"
                           : "text-primary-foreground",
                         isCollapsed && "justify-center px-0"

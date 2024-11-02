@@ -1,20 +1,9 @@
 "use client";
 
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { usePathname } from "next/navigation";
-import { Search, CircleUser, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
 import {
   Package2,
   Home,
@@ -23,10 +12,33 @@ import {
   Package,
   FileText,
   Truck,
+  Search,
+  Menu,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { useState } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const navItems = [
+  { href: "/dashboard", icon: Home, label: "Dashboard" },
+  { href: "/branches", icon: Building2, label: "Branches" },
+  { href: "/expenses", icon: DollarSign, label: "Expenses" },
+  { href: "/inventory", icon: Package, label: "Inventory" },
+  { href: "/reports", icon: FileText, label: "Reports" },
+  { href: "/suppliers", icon: Truck, label: "Suppliers" },
+  { href: "/products", icon: Package2, label: "Products" },
+];
 
 export function TopBar() {
   const pathname = usePathname();
@@ -50,7 +62,7 @@ export function TopBar() {
               href="/"
               className="flex items-center gap-2 text-lg font-semibold"
             >
-              <Package2 className="h-6 w-6" />
+              <img src="/icon.png" alt="Pomona Logo" className="h-6 w-6" />
               <span className="">POMONA Inc</span>
             </Link>
             <div className="py-2">
@@ -76,83 +88,21 @@ export function TopBar() {
                 </TabsList>
               </Tabs>
             </div>
-            <Link
-              href="/dashboard"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/dashboard"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <Home className="h-5 w-5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/branches"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/branches"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <Building2 className="h-5 w-5" />
-              Branches
-            </Link>
-            <Link
-              href="/expenses"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/expenses"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <DollarSign className="h-5 w-5" />
-              Expenses
-            </Link>
-            <Link
-              href="/inventory"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/inventory"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <Package className="h-5 w-5" />
-              Inventory
-            </Link>
-            <Link
-              href="/reports"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/reports"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <FileText className="h-5 w-5" />
-              Reports
-            </Link>
-            <Link
-              href="/suppliers"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/suppliers"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <Truck className="h-5 w-5" />
-              Suppliers
-            </Link>
-            <Link
-              href="/products"
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-primary ${
-                pathname === "/products"
-                  ? "bg-background text-primary font-semibold"
-                  : "text-primary-foreground"
-              }`}
-            >
-              <Package2 className="h-5 w-5" />
-              Products
-            </Link>
+            {navItems.map(({ href, icon: Icon, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
+                  pathname.startsWith(href)
+                    ? "bg-background text-foreground font-semibold"
+                    : "text-primary-foreground"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {label}
+              </Link>
+            ))}
           </nav>
         </SheetContent>
       </Sheet>
