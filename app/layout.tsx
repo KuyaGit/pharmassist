@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
-
 import "@fortawesome/fontawesome-svg-core/styles.css";
 import { config } from "@fortawesome/fontawesome-svg-core";
 import { SidebarProvider } from "@/components/SidebarContext";
+import "./loader.css";
+import { LoadingProvider } from "@/components/providers/loading-provider";
+
 config.autoAddCss = false;
 
 const geistSans = localFont({
@@ -34,11 +36,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider>
-          <Providers attribute="class" defaultTheme="system" enableSystem>
-            {children}
-          </Providers>
-        </SidebarProvider>
+        <LoadingProvider>
+          <SidebarProvider>
+            <Providers attribute="class" defaultTheme="system" enableSystem>
+              {children}
+            </Providers>
+          </SidebarProvider>
+        </LoadingProvider>
       </body>
     </html>
   );

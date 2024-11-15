@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import {
-  Package2,
   Home,
   Building2,
   DollarSign,
@@ -40,30 +40,59 @@ export function SideNavBar() {
       )}
     >
       <div className="flex h-full max-h-screen flex-col gap-2">
-        <div className="flex h-14 items-center justify-between px-2 md:h-[60px] md:px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold">
-            <Package2 className="h-6 w-6 flex-shrink-0" />
-            <span
+        <div className="flex h-14 items-center md:h-[60px]">
+          <div className="flex items-center w-full">
+            <div className="flex items-center gap-3 pl-3 pt-3">
+              <Link
+                href="/"
+                className="w-10 h-10 flex items-center justify-center"
+              >
+                <Image
+                  src="/icon.svg"
+                  alt="Pomona Logo"
+                  width={40}
+                  height={40}
+                  className="object-contain bg-white rounded-lg p-1"
+                />
+              </Link>
+              <div
+                className={cn(
+                  "transition-all duration-300",
+                  isCollapsed ? "opacity-0 w-0" : "opacity-100"
+                )}
+              >
+                <span className="font-semibold whitespace-nowrap flex flex-col">
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm tracking-widest font-bold">
+                      POMONA
+                    </span>
+                    <span className="text-sm font-medium opacity-70">×</span>
+                  </span>
+                  <span className="text-base font-medium tracking-tight -mt-0.5">
+                    PharmAssist
+                  </span>
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
               className={cn(
-                "transition-all duration-300 overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                "ml-auto transition-colors relative hover:bg-transparent",
+                isCollapsed ? "h-[60px] w-16" : "h-[60px] w-12",
+                "flex items-center justify-center",
+                "before:absolute before:content-[''] before:-inset-y-2 before:-inset-x-1",
+                "!hover:bg-transparent !hover:text-inherit"
               )}
+              onClick={toggleCollapse}
             >
-              POMONA
-            </span>
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto flex-shrink-0 hover:bg-transparent"
-            onClick={toggleCollapse}
-          >
-            {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
-            ) : (
-              <ChevronLeft className="h-4 w-4" />
-            )}
-          </Button>
+              {isCollapsed ? (
+                <ChevronRight className="h-5 w-5" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
         </div>
         <div className={cn("px-2 py-2", isCollapsed && "flex justify-center")}>
           <Tabs
@@ -137,7 +166,6 @@ export function SideNavBar() {
                 { href: "/inventory", icon: Package, label: "Inventory" },
                 { href: "/reports", icon: FileText, label: "Reports" },
                 { href: "/suppliers", icon: Truck, label: "Suppliers" },
-                { href: "/products", icon: Package2, label: "Products" },
               ].map(({ href, icon: Icon, label }) => (
                 <Tooltip key={href}>
                   <TooltipTrigger asChild>

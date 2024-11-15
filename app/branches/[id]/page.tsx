@@ -63,6 +63,7 @@ import {
 } from "@/components/ui/chart";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useLoading } from "@/components/providers/loading-provider";
 
 // Import mock data (you should replace this with actual API calls in a real application)
 import { branches, inventoryData, inventoryReportsData } from "@/lib/mockData";
@@ -160,6 +161,22 @@ export default function BranchDetails() {
       color: "hsl(var(--chart-5))",
     },
   } satisfies ChartConfig;
+
+  const { setIsLoading } = useLoading();
+
+  useEffect(() => {
+    const loadBranchData = async () => {
+      setIsLoading(true);
+      try {
+        // Your data fetching logic here
+        await new Promise((resolve) => setTimeout(resolve, 10000)); // Simulate loading
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadBranchData();
+  }, [setIsLoading]);
 
   if (!branch) {
     return <div>Branch not found</div>;

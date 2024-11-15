@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Package2,
   Home,
@@ -40,9 +40,25 @@ const navItems = [
   { href: "/products", icon: Package2, label: "Products" },
 ];
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export function TopBar() {
   const pathname = usePathname();
   const [view, setView] = useState<"retail" | "wholesale">("retail");
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 shadow-md">
@@ -106,17 +122,34 @@ export function TopBar() {
           </nav>
         </SheetContent>
       </Sheet>
-      <div className="w-full flex-1">
-        <form>
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search products..."
-              className="w-full appearance-none bg-background text-foreground pl-8 shadow-none md:w-2/3 lg:w-1/3"
-            />
+      <div className="w-full flex-1 items-center gap-4 text-primary-foreground">
+        <div className="hidden md:flex flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <p className="text-base font-semibold tracking-tight">
+              {getGreeting()},
+              <span className="ml-1.5 text-primary-foreground/85">
+                John Doe
+              </span>
+            </p>
           </div>
-        </form>
+          <div className="flex items-center gap-1.5 text-primary-foreground/75">
+            <p className="text-xs font-medium">
+              {currentTime.toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+              })}
+            </p>
+            <span className="text-xs">•</span>
+            <p className="text-xs font-medium tabular-nums">
+              {currentTime.toLocaleTimeString("en-US", {
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+              })}
+            </p>
+          </div>
+        </div>
       </div>
       <ThemeToggle />
       <DropdownMenu>
