@@ -66,7 +66,7 @@ export function SideNavBar() {
                     <span className="text-sm tracking-widest font-bold">
                       POMONA
                     </span>
-                    <span className="text-sm font-medium opacity-70">×</span>
+                    <span className="text-sm font-medium opacity-70"></span>
                   </span>
                   <span className="text-base font-medium tracking-tight -mt-0.5">
                     PharmAssist

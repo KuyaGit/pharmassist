@@ -7,6 +7,7 @@ import { config } from "@fortawesome/fontawesome-svg-core";
 import { SidebarProvider } from "@/components/SidebarContext";
 import "./loader.css";
 import { LoadingProvider } from "@/components/providers/loading-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 config.autoAddCss = false;
 
@@ -40,6 +41,7 @@ export default function RootLayout({
           <SidebarProvider>
             <Providers attribute="class" defaultTheme="system" enableSystem>
               {children}
+              <Toaster />
             </Providers>
           </SidebarProvider>
         </LoadingProvider>
