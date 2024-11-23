@@ -26,17 +26,25 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useSidebar } from "./SidebarContext";
+import { useBranchTypeStore } from "@/lib/store/branch-type-store";
+
+type BranchType = "retail" | "wholesale";
 
 export function SideNavBar() {
   const pathname = usePathname();
-  const [view, setView] = useState<"retail" | "wholesale">("retail");
-  const { isCollapsed, toggleCollapse } = useSidebar();
+  const { isCollapsed, toggleCollapse, isInitialized } = useSidebar();
+  const { branchType, setBranchType } = useBranchTypeStore();
+
+  if (!isInitialized) {
+    return null;
+  }
 
   return (
     <div
       className={cn(
-        "hidden top-0 left-0 z-40 bg-primary text-primary-foreground md:flex flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64"
+        "hidden top-0 left-0 z-40 bg-primary text-primary-foreground md:flex flex-col",
+        isCollapsed ? "w-16" : "w-64",
+        isInitialized && "transition-all duration-300"
       )}
     >
       <div className="flex h-full max-h-screen flex-col gap-2">
@@ -96,10 +104,9 @@ export function SideNavBar() {
         </div>
         <div className={cn("px-2 py-2", isCollapsed && "flex justify-center")}>
           <Tabs
-            value={view}
-            onValueChange={(value) => setView(value as "retail" | "wholesale")}
+            value={branchType}
+            onValueChange={(value) => setBranchType(value as BranchType)}
             className={cn("w-full", isCollapsed && "flex flex-col")}
-            orientation={isCollapsed ? "vertical" : "horizontal"}
           >
             <TabsList
               className={cn(

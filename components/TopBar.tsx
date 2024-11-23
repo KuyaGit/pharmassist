@@ -29,6 +29,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ClientTime } from "@/components/ClientTime";
+import { logout } from "@/lib/auth";
+import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -50,15 +53,7 @@ function getGreeting() {
 export function TopBar() {
   const pathname = usePathname();
   const [view, setView] = useState<"retail" | "wholesale">("retail");
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
+  const { user, isLoading } = useCurrentUser();
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 shadow-md">
@@ -128,56 +123,51 @@ export function TopBar() {
             <p className="text-base font-semibold tracking-tight">
               {getGreeting()},
               <span className="ml-1.5 text-primary-foreground/85">
-                John Doe
+                {user?.full_name || "Loading..."}
               </span>
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-primary-foreground/75">
-            <p className="text-xs font-medium">
-              {currentTime.toLocaleDateString("en-US", {
-                weekday: "long",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-            <span className="text-xs">•</span>
-            <p className="text-xs font-medium tabular-nums">
-              {currentTime.toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              })}
-            </p>
+            <ClientTime />
           </div>
         </div>
       </div>
-      <ThemeToggle />
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/avatars/01.png" alt="@johndoe" />
-              <AvatarFallback>JD</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">John Doe</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                Administrator
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>Profile</DropdownMenuItem>
-          <DropdownMenuItem>Billing</DropdownMenuItem>
-          <DropdownMenuItem>Settings</DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>Log out</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="ml-auto flex items-center gap-4">
+        <ThemeToggle />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+              <Avatar className="h-8 w-8">
+                <AvatarImage
+                  src="/avatars/01.png"
+                  alt={user?.full_name || "User"}
+                />
+                <AvatarFallback>
+                  {user?.full_name
+                    ? `${user.full_name.split(" ")[0][0]}${
+                        user.full_name.split(" ")[1]?.[0] || ""
+                      }`
+                    : "U"}
+                </AvatarFallback>
+              </Avatar>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-56" align="end" forceMount>
+            <DropdownMenuLabel className="font-normal">
+              <div className="flex flex-col space-y-1">
+                <p className="text-sm font-medium leading-none">
+                  {user?.full_name || "Loading..."}
+                </p>
+                <p className="text-xs leading-none text-muted-foreground">
+                  {user?.email || "loading..."}
+                </p>
+              </div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
     </header>
   );
 }

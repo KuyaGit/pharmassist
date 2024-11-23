@@ -64,47 +64,29 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useLoading } from "@/components/providers/loading-provider";
-
-// Import mock data (you should replace this with actual API calls in a real application)
-import { branches, inventoryData, inventoryReportsData } from "@/lib/mockData";
-
-// Mock data for sales and profits
-const salesData = [
-  { month: "Jan", sales: 4000, profit: 2400 },
-  { month: "Feb", sales: 3000, profit: 1398 },
-  { month: "Mar", sales: 2000, profit: 9800 },
-  { month: "Apr", sales: 2780, profit: 3908 },
-  { month: "May", sales: 1890, profit: 4800 },
-  { month: "Jun", sales: 2390, profit: 3800 },
-];
-
-const salesByCategory = [
-  { name: "Prescription", value: 4000 },
-  { name: "OTC", value: 3000 },
-  { name: "Personal Care", value: 2000 },
-  { name: "Supplements", value: 1500 },
-  { name: "Other", value: 500 },
-];
+import { useBranchDetails } from "@/hooks/useBranchDetails";
+import { BranchInventory, BranchReport } from "@/types/branch";
 
 export default function BranchDetails() {
   const params = useParams();
   const branchId = parseInt(params.id as string);
-  const [branch, setBranch] = useState(branches.find((b) => b.id === branchId));
+  const {
+    branch,
+    inventory: branchInventory,
+    reports: branchReports,
+    salesData,
+    categorySales,
+    isLoading,
+    error,
+  } = useBranchDetails(branchId);
 
-  const branchInventory = inventoryData.filter(
-    (item) => item.branch_name === branch?.name
-  );
-  const branchReports = inventoryReportsData.filter(
-    (report) => report.branch_id === branchId
-  );
-
-  const inventoryColumns: ColumnDef<(typeof branchInventory)[0]>[] = [
+  const inventoryColumns: ColumnDef<BranchInventory>[] = [
     { accessorKey: "product_name", header: "Product Name" },
     { accessorKey: "stock_level", header: "Stock Level" },
     { accessorKey: "expiry_date", header: "Expiry Date" },
   ];
 
-  const reportColumns: ColumnDef<(typeof branchReports)[0]>[] = [
+  const reportColumns: ColumnDef<BranchReport>[] = [
     { accessorKey: "id", header: "Report ID" },
     { accessorKey: "date_created", header: "Date Created" },
     {
@@ -162,24 +144,8 @@ export default function BranchDetails() {
     },
   } satisfies ChartConfig;
 
-  const { setIsLoading } = useLoading();
-
-  useEffect(() => {
-    const loadBranchData = async () => {
-      setIsLoading(true);
-      try {
-        // Your data fetching logic here
-        await new Promise((resolve) => setTimeout(resolve, 10000)); // Simulate loading
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadBranchData();
-  }, [setIsLoading]);
-
-  if (!branch) {
-    return <div>Branch not found</div>;
+  if (error || !branch) {
+    return <div>Error loading branch details</div>; // We'll improve this error state later
   }
 
   return (
@@ -415,13 +381,13 @@ export default function BranchDetails() {
                   <PieChart>
                     <ChartTooltip content={<ChartTooltipContent hideLabel />} />
                     <Pie
-                      data={salesByCategory}
+                      data={categorySales}
                       dataKey="value"
                       nameKey="name"
                       startAngle={90}
                       endAngle={-270}
                     >
-                      {salesByCategory.map((entry, index) => (
+                      {categorySales.map((entry, index) => (
                         <Cell
                           key={`cell-${index}`}
                           fill={
@@ -440,10 +406,10 @@ export default function BranchDetails() {
               </CardContent>
               <CardFooter className="flex-col gap-2 text-sm">
                 <div className="flex items-center gap-2 font-medium leading-none">
-                  Highest category: {salesByCategory[0].name} (
+                  Highest category: {categorySales[0].name} (
                   {(
-                    (salesByCategory[0].value /
-                      salesByCategory.reduce(
+                    (categorySales[0].value /
+                      categorySales.reduce(
                         (sum, item) => sum + item.value,
                         0
                       )) *
