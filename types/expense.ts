@@ -1,15 +1,23 @@
 export enum ExpenseType {
   UTILITIES = "utilities",
+  SUPPLIES = "supplies",
+  MAINTENANCE = "maintenance",
+  SALARY = "salary",
   RENT = "rent",
-  SALARIES = "salaries",
-  INVENTORY = "inventory",
   MARKETING = "marketing",
-  OTHER = "other",
+  INVENTORY = "inventory",
+  OTHERS = "others",
 }
 
 export enum ExpenseScope {
   BRANCH = "branch",
-  COMPANY = "company",
+  MAIN_OFFICE = "main_office",
+  COMPANY_WIDE = "company_wide",
+}
+
+interface Branch {
+  id: number;
+  branch_name: string;
 }
 
 export interface Expense {
@@ -25,6 +33,7 @@ export interface Expense {
   created_by_id: number;
   created_at: string;
   updated_at: string;
+  branch?: Branch;
 }
 
 export interface ExpenseAnalytics {

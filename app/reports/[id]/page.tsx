@@ -190,7 +190,8 @@ function ReportContent({
               enableSorting
               enableFiltering
               enableColumnVisibility
-              filterColumn="product_id"
+              filterColumn="product_name"
+              filterPlaceholder="Search by product name..."
             />
           </CardContent>
         </Card>

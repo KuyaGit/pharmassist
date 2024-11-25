@@ -8,6 +8,7 @@ import { SidebarProvider } from "@/components/SidebarContext";
 import "./loader.css";
 import { LoadingProvider } from "@/components/providers/loading-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { ViewProvider } from "@/lib/context/ViewContext";
 
 config.autoAddCss = false;
 
@@ -37,14 +38,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LoadingProvider>
-          <SidebarProvider>
-            <Providers attribute="class" defaultTheme="system" enableSystem>
-              {children}
-              <Toaster />
-            </Providers>
-          </SidebarProvider>
-        </LoadingProvider>
+        <ViewProvider>
+          <LoadingProvider>
+            <SidebarProvider>
+              <Providers attribute="class" defaultTheme="system" enableSystem>
+                {children}
+                <Toaster />
+              </Providers>
+            </SidebarProvider>
+          </LoadingProvider>
+        </ViewProvider>
       </body>
     </html>
   );

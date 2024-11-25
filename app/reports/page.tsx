@@ -334,6 +334,8 @@ export default function InventoryReports() {
                   enableFiltering
                   enableSorting
                   enableColumnVisibility
+                  filterColumn={["branch_name", "id"]}
+                  filterPlaceholder="Search by branch name or report ID..."
                 />
               )}
             </CardContent>

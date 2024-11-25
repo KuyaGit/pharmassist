@@ -32,6 +32,7 @@ import {
   faStore,
   faExclamationTriangle,
   faClock,
+  faMoneyBillWave,
 } from "@fortawesome/free-solid-svg-icons";
 
 interface Branch {
@@ -109,9 +110,15 @@ export default function BranchDetails() {
       accessorKey: "current_expiration_date",
       header: "Expiry Date",
       cell: ({ row }) => {
-        const date = new Date(
-          row.getValue("current_expiration_date") as string
-        );
+        const dateValue = row.getValue("current_expiration_date") as
+          | string
+          | null;
+
+        if (!dateValue) {
+          return <div className="font-medium text-muted-foreground">-</div>;
+        }
+
+        const date = new Date(dateValue);
         const today = new Date();
         const thirtyDaysFromNow = new Date(
           today.getTime() + 30 * 24 * 60 * 60 * 1000
@@ -148,25 +155,34 @@ export default function BranchDetails() {
     {
       accessorKey: "created_at",
       header: "Created At",
+      accessorFn: (row) => {
+        const date = new Date(row.created_at);
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+      },
       cell: ({ row }) => {
-        try {
-          const date = new Date(row.getValue("created_at"));
-          const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
-          const restOfDate = date.toLocaleDateString("en-US", {
+        const date = new Date(row.original.created_at);
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      },
+      filterFn: (row, id, filterValue) => {
+        const date = new Date(row.getValue(id));
+        const searchableDate = date
+          .toLocaleDateString("en-US", {
             year: "numeric",
             month: "short",
             day: "numeric",
-          });
-          return (
-            <div className="flex items-center gap-1">
-              <span className="font-bold">{weekday}</span>
-              <span>,</span>
-              <span>{restOfDate}</span>
-            </div>
-          );
-        } catch {
-          return "Invalid Date";
-        }
+          })
+          .toLowerCase();
+        return searchableDate.includes(filterValue.toLowerCase());
       },
     },
     {
@@ -339,10 +355,13 @@ export default function BranchDetails() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {branchProducts.length}
+                  {
+                    branchProducts.filter((product) => product.is_available)
+                      .length
+                  }
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Products in this branch
+                  Active products in this branch
                 </p>
               </CardContent>
             </Card>
@@ -384,13 +403,43 @@ export default function BranchDetails() {
                   {
                     branchProducts.filter(
                       (item) =>
+                        item.current_expiration_date &&
                         new Date(item.current_expiration_date) <=
-                        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                     ).length
                   }
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Expiring within 30 days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Value
+                </CardTitle>
+                <FontAwesomeIcon
+                  icon={faMoneyBillWave}
+                  size="2x"
+                  className="text-icon"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(
+                    branchProducts.reduce(
+                      (sum, product) => sum + product.peso_value,
+                      0
+                    )
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Total inventory value
                 </p>
               </CardContent>
             </Card>
@@ -410,6 +459,8 @@ export default function BranchDetails() {
                 enableFiltering
                 enableSorting
                 enableColumnVisibility
+                filterColumn={["product_name"]}
+                filterPlaceholder="Search by product name..."
               />
             </CardContent>
           </Card>
@@ -429,6 +480,8 @@ export default function BranchDetails() {
                 enableSorting
                 enableColumnVisibility
                 onRowClick={handleRowClick}
+                filterColumn={["id", "created_at"]}
+                filterPlaceholder="Search by report ID or creation date..."
               />
             </CardContent>
           </Card>

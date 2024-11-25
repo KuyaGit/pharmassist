@@ -37,7 +37,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Search } from "lucide-react";
+import {
+  ArrowRight,
+  Plus,
+  Search,
+  MapPin,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +60,8 @@ interface Branch {
   location: string;
   is_active: boolean;
   branch_type: string;
+  has_low_stock: boolean;
+  has_near_expiry: boolean;
 }
 
 export default function Branches() {
@@ -323,44 +332,69 @@ export default function Branches() {
                 <Card
                   key={branch.id}
                   className={cn(
-                    branch.is_active === false && "",
-                    "relative overflow-hidden"
+                    "group relative overflow-hidden transition-all hover:shadow-lg flex flex-col",
+                    !branch.is_active && "opacity-75"
                   )}
                 >
-                  <div className="absolute top-2 right-2 z-10">
+                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
                     <Badge
                       variant={branch.is_active ? "active" : "secondary"}
                       className={cn(
-                        !branch.is_active && "",
-                        "relative overflow-hidden"
+                        "px-2 py-1 text-xs font-medium transition-colors",
+                        branch.is_active
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
                       )}
                     >
                       {branch.is_active ? "Active" : "Inactive"}
                     </Badge>
-                  </div>
-                  <CardHeader
-                    className={cn(
-                      branch.is_active === false && "opacity-60",
-                      "relative overflow-hidden"
-                    )}
-                  >
-                    <CardTitle>{branch.branch_name}</CardTitle>
-                    <CardDescription>{branch.location}</CardDescription>
-                  </CardHeader>
-
-                  <CardFooter
-                    className={cn(
-                      branch.is_active === false && "opacity-60",
-                      ""
-                    )}
-                  >
-                    <Button asChild>
-                      <Link
-                        href={`/branches/${branch.id}`}
-                        className="flex items-center gap-2"
+                    {branch.has_low_stock && (
+                      <Badge
+                        variant="destructive"
+                        className={cn(
+                          "px-2 py-0.5 text-xs font-medium",
+                          "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+                          "flex items-center gap-1"
+                        )}
                       >
-                        See More
-                        <ArrowRight className="h-4 w-4" />
+                        <AlertCircle className="h-3 w-3" />
+                        Low Stock
+                      </Badge>
+                    )}
+                    {branch.has_near_expiry && (
+                      <Badge
+                        variant="warning"
+                        className={cn(
+                          "px-2 py-0.5 text-xs font-medium",
+                          "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+                          "flex items-center gap-1"
+                        )}
+                      >
+                        <Clock className="h-3 w-3" />
+                        Near Expiry
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex-1 p-6">
+                    <CardTitle className="text-xl font-semibold tracking-tight">
+                      {branch.branch_name}
+                    </CardTitle>
+                    <CardDescription className="flex items-center text-sm mt-2">
+                      <MapPin className="mr-1 h-4 w-4" />
+                      {branch.location}
+                    </CardDescription>
+                  </div>
+
+                  <CardFooter className="mt-auto">
+                    <Button
+                      asChild
+                      variant="default"
+                      className="w-full transition-all hover:translate-x-1"
+                    >
+                      <Link href={`/branches/${branch.id}`}>
+                        <span className="flex-1">View Details</span>
+                        <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>
                   </CardFooter>

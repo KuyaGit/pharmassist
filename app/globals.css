@@ -2,6 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
@@ -136,8 +142,8 @@
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 205 10% 97.5%;
 
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
+    --warning: 48 96% 89%;
+    --warning-foreground: 38 92% 50%;
 
     --success: 115 54% 76%;
     --success-foreground: 240 21% 15%;

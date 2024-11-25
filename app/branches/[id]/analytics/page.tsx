@@ -227,8 +227,9 @@ export default function BranchDetails() {
                   {
                     branchInventory.filter(
                       (item) =>
+                        item.expiry_date &&
                         new Date(item.expiry_date) <=
-                        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+                          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                     ).length
                   }
                 </div>

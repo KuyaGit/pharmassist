@@ -7,6 +7,8 @@ export interface Branch {
   location: string;
   is_active: boolean;
   branch_type: "retail" | "wholesale";
+  has_low_stock: boolean;
+  has_near_expiry: boolean;
 }
 
 export interface BranchInventory {

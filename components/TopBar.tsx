@@ -32,12 +32,13 @@ import {
 import { ClientTime } from "@/components/ClientTime";
 import { logout } from "@/lib/auth";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
+import { useView } from "@/lib/context/ViewContext";
+import { useBranchTypeStore } from "@/lib/store/branch-type-store";
 
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/branches", icon: Building2, label: "Branches" },
   { href: "/expenses", icon: DollarSign, label: "Expenses" },
-  { href: "/inventory", icon: Package, label: "Inventory" },
   { href: "/reports", icon: FileText, label: "Reports" },
   { href: "/suppliers", icon: Truck, label: "Suppliers" },
   { href: "/products", icon: Package2, label: "Products" },
@@ -52,7 +53,7 @@ function getGreeting() {
 
 export function TopBar() {
   const pathname = usePathname();
-  const [view, setView] = useState<"retail" | "wholesale">("retail");
+  const { branchType, setBranchType } = useBranchTypeStore();
   const { user, isLoading } = useCurrentUser();
 
   return (
@@ -66,7 +67,7 @@ export function TopBar() {
         </SheetTrigger>
         <SheetContent
           side="left"
-          className="flex flex-col bg-primary text-primary-foreground"
+          className="flex flex-col bg-primary text-primary-foreground w-[80%] max-w-[300px] h-screen overflow-y-auto"
         >
           <nav className="grid gap-2 text-lg font-medium">
             <Link
@@ -78,9 +79,9 @@ export function TopBar() {
             </Link>
             <div className="py-2">
               <Tabs
-                value={view}
+                value={branchType}
                 onValueChange={(value) =>
-                  setView(value as "retail" | "wholesale")
+                  setBranchType(value as "retail" | "wholesale")
                 }
               >
                 <TabsList className="grid w-full grid-cols-2">

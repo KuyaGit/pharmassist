@@ -51,7 +51,8 @@ interface DataTableProps<TData, TValue> {
   enableSorting?: boolean;
   enableFiltering?: boolean;
   enableColumnVisibility?: boolean;
-  filterColumn?: string;
+  filterColumn?: string | string[];
+  filterPlaceholder?: string;
   contextMenuOptions?: (row: TData) => {
     label: string;
     onClick: () => void;
@@ -68,6 +69,7 @@ export function DataTable<TData, TValue>({
   enableFiltering = false,
   enableColumnVisibility = false,
   filterColumn,
+  filterPlaceholder,
   contextMenuOptions,
   onRowClick,
 }: DataTableProps<TData, TValue>) {
@@ -92,6 +94,20 @@ export function DataTable<TData, TValue>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const searchValue = filterValue.toLowerCase();
+      if (!filterColumn) return true;
+
+      if (Array.isArray(filterColumn)) {
+        return filterColumn.some((column) => {
+          const value = row.getValue(column);
+          return String(value).toLowerCase().includes(searchValue);
+        });
+      }
+
+      const value = row.getValue(filterColumn);
+      return String(value).toLowerCase().includes(searchValue);
+    },
     state: {
       sorting,
       columnFilters,
@@ -109,7 +125,7 @@ export function DataTable<TData, TValue>({
         {enableFiltering && (
           <div className="flex items-center py-4 w-full">
             <Input
-              placeholder="Filter..."
+              placeholder={filterPlaceholder || "Filter..."}
               value={globalFilter}
               onChange={(event) => setGlobalFilter(event.target.value)}
               className="w-full sm:max-w-sm"
@@ -228,8 +244,11 @@ export function DataTable<TData, TValue>({
       <div className="flex items-center justify-end space-x-2 py-4">
         <div className="flex-1 text-sm text-muted-foreground">
           <div className="flex gap-2 items-center">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
+            {Math.min(
+              table.getFilteredRowModel().rows.length,
+              table.getState().pagination.pageSize
+            )}{" "}
+            of {table.getFilteredRowModel().rows.length} row(s)
             <Select
               value={table.getState().pagination.pageSize.toString()}
               onValueChange={(value) => {
