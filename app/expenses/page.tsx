@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SideNavBar } from "@/components/SideNavBar";
 import { TopBar } from "@/components/TopBar";
-import { Button } from "@/components/ui/button";
+import {
+  Expense,
+  ExpenseType,
+  ExpenseScope,
+  ExpenseAnalytics,
+} from "@/types/expense";
+import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
+import { format, formatDistanceToNow } from "date-fns";
 import {
   Card,
   CardContent,
@@ -52,95 +59,88 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TrendingUp } from "lucide-react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from "recharts";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
 import { DataTable } from "@/components/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
-
-// Mock data for expenses
-const expensesData = [
-  { id: 1, category: "Inventory", amount: 5000, date: "2023-05-01" },
-  { id: 2, category: "Rent", amount: 2000, date: "2023-05-02" },
-  { id: 3, category: "Utilities", amount: 500, date: "2023-05-03" },
-  { id: 4, category: "Salaries", amount: 8000, date: "2023-05-04" },
-  { id: 5, category: "Marketing", amount: 1000, date: "2023-05-05" },
-];
-
-// Mock data for line chart
-const lineChartData = [
-  { month: "Jan", expenses: 4000 },
-  { month: "Feb", expenses: 3000 },
-  { month: "Mar", expenses: 5000 },
-  { month: "Apr", expenses: 4500 },
-  { month: "May", expenses: 6000 },
-  { month: "Jun", expenses: 5500 },
-];
-
-// Mock data for pie chart
-const pieChartData = [
-  { name: "Inventory", value: 5000 },
-  { name: "Rent", value: 2000 },
-  { name: "Utilities", value: 500 },
-  { name: "Salaries", value: 8000 },
-  { name: "Marketing", value: 1000 },
-];
-
-const sortedPieChartData = pieChartData.sort((a, b) => b.value - a.value);
-
-const chartColors = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
-];
-
-const chartConfig = {
-  expenses: {
-    label: "Expenses",
-  },
-  Inventory: {
-    label: "Inventory",
-  },
-  Rent: {
-    label: "Rent",
-  },
-  Utilities: {
-    label: "Utilities",
-  },
-  Salaries: {
-    label: "Salaries",
-  },
-  Marketing: {
-    label: "Marketing",
-  },
-} satisfies ChartConfig;
+import { Button } from "@/components/ui/button";
+import { TrendingUp } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Expenses() {
+  const [user] = useState(() =>
+    JSON.parse(localStorage.getItem("user") || "{}")
+  );
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [analytics, setAnalytics] = useState<ExpenseAnalytics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const columns: ColumnDef<(typeof expensesData)[0]>[] = [
+  const [newExpense, setNewExpense] = useState<Partial<Expense>>({
+    name: "",
+    type: ExpenseType.UTILITIES,
+    amount: 0,
+    description: "",
+    vendor: "",
+    scope: ExpenseScope.BRANCH,
+    branch_id: null,
+    date_created: format(new Date(), "yyyy-MM-dd"),
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      if (!token) {
+        window.location.href = "/pharmassist";
+        return;
+      }
+
+      const [expensesRes, analyticsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.EXPENSES.LIST}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }),
+        fetch(`${API_BASE_URL}${API_ENDPOINTS.EXPENSES.ANALYTICS}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }),
+      ]);
+
+      if (!expensesRes.ok || !analyticsRes.ok) {
+        const errorData = await expensesRes.text();
+        console.error("API Error:", errorData);
+        throw new Error("Failed to fetch data");
+      }
+
+      const expensesData = await expensesRes.json();
+      const analyticsData = await analyticsRes.json();
+
+      console.log("Expenses Data:", expensesData);
+      console.log("Analytics Data:", analyticsData);
+
+      setExpenses(expensesData);
+      setAnalytics(analyticsData);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast.error("Failed to fetch expenses data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [user.id]);
+
+  const columns: ColumnDef<Expense>[] = [
     {
-      accessorKey: "category",
+      accessorKey: "name",
+      header: "Name",
+    },
+    {
+      accessorKey: "type",
       header: "Category",
     },
     {
@@ -148,19 +148,87 @@ export default function Expenses() {
       header: "Amount",
       cell: ({ row }) => {
         const amount = parseFloat(row.getValue("amount"));
-        const formatted = new Intl.NumberFormat("en-US", {
+        return new Intl.NumberFormat("en-PH", {
           style: "currency",
-          currency: "USD",
+          currency: "PHP",
         }).format(amount);
-
-        return <div className="font-medium">{formatted}</div>;
       },
     },
     {
-      accessorKey: "date",
+      accessorKey: "scope",
+      header: "Scope",
+      cell: ({ row }) => {
+        const scope = row.getValue("scope") as ExpenseScope;
+        return scope.replace("_", " ").charAt(0).toUpperCase() + scope.slice(1);
+      },
+    },
+    {
+      accessorKey: "date_created",
       header: "Date",
+      cell: ({ row }) =>
+        format(new Date(row.getValue("date_created")), "MMM d, yyyy"),
+    },
+    {
+      accessorKey: "vendor",
+      header: "Vendor",
     },
   ];
+
+  const handleCreateExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newExpense.name || !newExpense.type || !newExpense.amount) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) throw new Error("No auth token");
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.EXPENSES.CREATE}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...newExpense,
+            branch_id: user?.branch_id,
+            scope: ExpenseScope.BRANCH,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("API Error:", errorData);
+        throw new Error("Failed to create expense");
+      }
+
+      await fetchData(); // Refresh the data
+      setIsDialogOpen(false);
+      setNewExpense({
+        name: "",
+        type: ExpenseType.UTILITIES,
+        amount: 0,
+        description: "",
+        vendor: "",
+        scope: ExpenseScope.BRANCH,
+        branch_id: user?.branch_id || null,
+        date_created: format(new Date(), "yyyy-MM-dd"),
+      });
+
+      toast.success("Expense created successfully");
+    } catch (error) {
+      console.error("Error creating expense:", error);
+      toast.error("Failed to create expense. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -175,62 +243,113 @@ export default function Expenses() {
                 <Button>Add New Expense</Button>
               </DialogTrigger>
               <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Add New Expense</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="category" className="text-right">
-                      Category
-                    </Label>
-                    <Select>
-                      <SelectTrigger className="col-span-3">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="inventory">Inventory</SelectItem>
-                        <SelectItem value="rent">Rent</SelectItem>
-                        <SelectItem value="utilities">Utilities</SelectItem>
-                        <SelectItem value="salaries">Salaries</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <form onSubmit={handleCreateExpense}>
+                  <DialogHeader>
+                    <DialogTitle>Add New Expense</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Name
+                      </Label>
+                      <Input
+                        id="name"
+                        value={newExpense.name}
+                        onChange={(e) =>
+                          setNewExpense({ ...newExpense, name: e.target.value })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="category" className="text-right">
+                        Category
+                      </Label>
+                      <Select
+                        value={newExpense.type}
+                        onValueChange={(value) =>
+                          setNewExpense({
+                            ...newExpense,
+                            type: value as ExpenseType,
+                          })
+                        }
+                      >
+                        <SelectTrigger className="col-span-3">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.values(ExpenseType).map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="amount" className="text-right">
+                        Amount
+                      </Label>
+                      <Input
+                        id="amount"
+                        type="number"
+                        value={newExpense.amount}
+                        onChange={(e) =>
+                          setNewExpense({
+                            ...newExpense,
+                            amount: parseFloat(e.target.value),
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="vendor" className="text-right">
+                        Vendor
+                      </Label>
+                      <Input
+                        id="vendor"
+                        value={newExpense.vendor || ""}
+                        onChange={(e) =>
+                          setNewExpense({
+                            ...newExpense,
+                            vendor: e.target.value,
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="date" className="text-right">
+                        Date
+                      </Label>
+                      <Input
+                        id="date"
+                        type="date"
+                        value={newExpense.date_created}
+                        onChange={(e) =>
+                          setNewExpense({
+                            ...newExpense,
+                            date_created: e.target.value,
+                          })
+                        }
+                        className="col-span-3"
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="amount" className="text-right">
-                      Amount
-                    </Label>
-                    <Input id="amount" type="number" className="col-span-3" />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="date" className="text-right">
-                      Date
-                    </Label>
-                    <Input id="date" type="date" className="col-span-3" />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Save changes</Button>
-                </DialogFooter>
+                  <DialogFooter>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? "Saving..." : "Save changes"}
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
           </div>
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem>
-                <BreadcrumbLink href="/">Home</BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
-                <BreadcrumbPage>Expenses</BreadcrumbPage>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">
+                <CardTitle className="text-sm font-medium">
                   Total Expenses
                 </CardTitle>
                 <FontAwesomeIcon
@@ -240,16 +359,28 @@ export default function Expenses() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$16,500</div>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(analytics?.total_amount || 0)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
+                  {typeof analytics?.month_over_month_change === "number"
+                    ? `${
+                        analytics.month_over_month_change > 0 ? "+" : ""
+                      }${analytics.month_over_month_change.toFixed(
+                        1
+                      )}% from last month`
+                    : "No data from last month"}
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Average Daily Expense
+                  Daily Average
                 </CardTitle>
                 <FontAwesomeIcon
                   icon={faChartLine}
@@ -258,16 +389,22 @@ export default function Expenses() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$550</div>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(analytics?.daily_average || 0)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  -5% from last week
+                  Current month average
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Highest Expense Category
+                  Highest Category
                 </CardTitle>
                 <FontAwesomeIcon
                   icon={faShoppingCart}
@@ -276,16 +413,19 @@ export default function Expenses() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">Inventory</div>
+                <div className="text-2xl font-bold">
+                  {analytics?.highest_category || "N/A"}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  30% of total expenses
+                  {analytics?.highest_category_percentage?.toFixed(1)}% of total
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Last Expense Date
+                  Last Expense
                 </CardTitle>
                 <FontAwesomeIcon
                   icon={faCalendarAlt}
@@ -294,96 +434,22 @@ export default function Expenses() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">May 5, 2023</div>
-                <p className="text-xs text-muted-foreground">2 days ago</p>
+                <div className="text-2xl font-bold">
+                  {analytics?.last_expense_date
+                    ? format(new Date(analytics.last_expense_date), "MMM d")
+                    : "N/A"}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {analytics?.last_expense_date
+                    ? formatDistanceToNow(
+                        new Date(analytics.last_expense_date),
+                        { addSuffix: true }
+                      )
+                    : "N/A"}
+                </p>
               </CardContent>
             </Card>
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="col-span-1">
-              <CardHeader>
-                <CardTitle>Expenses Over Time</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig}>
-                  <AreaChart
-                    accessibilityLayer
-                    data={lineChartData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid vertical={false} />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <ChartTooltip
-                      content={<ChartTooltipContent indicator="line" />}
-                    />
-                    <Area
-                      type="natural"
-                      dataKey="expenses"
-                      fill="hsl(var(--chart-1))"
-                      fillOpacity={0.4}
-                      stroke="hsl(var(--chart-1))"
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter>
-                <div className="flex w-full items-start gap-2 text-sm">
-                  <div className="grid gap-2">
-                    <div className="flex items-center gap-2 font-medium leading-none">
-                      Trending up by 37.5% this month{" "}
-                      <TrendingUp className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center gap-2 leading-none text-muted-foreground">
-                      January - June 2023
-                    </div>
-                  </div>
-                </div>
-              </CardFooter>
-            </Card>
-
-            <Card className="col-span-1 flex flex-col">
-              <CardHeader className="items-center pb-0">
-                <CardTitle>Expense Categories</CardTitle>
-                <CardDescription>Current Month</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 pb-0">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={sortedPieChartData}
-                      dataKey="value"
-                      nameKey="name"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {sortedPieChartData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={chartColors[index % chartColors.length]}
-                        />
-                      ))}
-                    </Pie>
-                    <ChartLegend
-                      content={<ChartLegendContent nameKey="name" />}
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                    />
-                  </PieChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col gap-2 text-sm">
-                <div className="flex items-center gap-2 font-medium leading-none">
-                  Highest category: Salaries (30.8%)
-                </div>
-                <div className="leading-none text-muted-foreground">
-                  Showing expense distribution for the current month
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-
           <Card className="col-span-4">
             <CardHeader>
               <CardTitle>Recent Expenses</CardTitle>
@@ -392,8 +458,8 @@ export default function Expenses() {
             <CardContent>
               <DataTable
                 columns={columns}
-                data={expensesData}
-                filterColumn="category"
+                data={expenses}
+                filterColumn="type"
               />
             </CardContent>
           </Card>

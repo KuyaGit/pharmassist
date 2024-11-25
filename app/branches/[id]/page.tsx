@@ -1,15 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import { SideNavBar } from "@/components/SideNavBar";
 import { TopBar } from "@/components/TopBar";
-import { Button } from "@/components/ui/button";
+import { DataTable } from "@/components/DataTable";
+import { ColumnDef } from "@tanstack/react-table";
+import { Badge } from "@/components/ui/badge";
+import { InventoryReport } from "@/types/inventory";
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -21,131 +23,269 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { DataTable } from "@/components/DataTable";
-import { ColumnDef } from "@tanstack/react-table";
+import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
+
+import { Icons } from "@/components/icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBoxes,
-  faClipboardList,
+  faStore,
   faExclamationTriangle,
   faClock,
-  faDollarSign,
-  faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Cell,
-  PieChart,
-  Pie,
-  Legend,
-  Sector,
-} from "recharts";
-import { PieSectorDataItem } from "recharts/types/polar/Pie";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TrendingUp } from "lucide-react";
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { useLoading } from "@/components/providers/loading-provider";
-import { useBranchDetails } from "@/hooks/useBranchDetails";
-import { BranchInventory, BranchReport } from "@/types/branch";
+
+interface Branch {
+  id: number;
+  branch_name: string;
+  location: string;
+  is_active: boolean;
+  branch_type: string;
+}
+
+interface BranchProduct {
+  id: string;
+  product_id: number;
+  branch_id: number;
+  quantity: number;
+  peso_value: number;
+  current_expiration_date: string;
+  is_low_stock: boolean;
+  active_quantity: number;
+  is_available: boolean;
+  branch_type: string;
+  is_retail_available: boolean;
+  is_wholesale_available: boolean;
+  retail_low_stock_threshold: number;
+  wholesale_low_stock_threshold: number;
+  product_name: string;
+}
 
 export default function BranchDetails() {
   const params = useParams();
-  const branchId = parseInt(params.id as string);
-  const {
-    branch,
-    inventory: branchInventory,
-    reports: branchReports,
-    salesData,
-    categorySales,
-    isLoading,
-    error,
-  } = useBranchDetails(branchId);
+  const router = useRouter();
+  const [branch, setBranch] = useState<Branch | null>(null);
+  const [branchProducts, setBranchProducts] = useState<BranchProduct[]>([]);
+  const [inventoryReports, setInventoryReports] = useState<InventoryReport[]>(
+    []
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
-  const inventoryColumns: ColumnDef<BranchInventory>[] = [
-    { accessorKey: "product_name", header: "Product Name" },
-    { accessorKey: "stock_level", header: "Stock Level" },
-    { accessorKey: "expiry_date", header: "Expiry Date" },
-  ];
-
-  const reportColumns: ColumnDef<BranchReport>[] = [
-    { accessorKey: "id", header: "Report ID" },
-    { accessorKey: "date_created", header: "Date Created" },
+  const columns: ColumnDef<BranchProduct>[] = [
     {
-      accessorKey: "status",
-      header: "Status",
+      accessorKey: "product_name",
+      header: "Product Name",
+    },
+    {
+      accessorKey: "active_quantity",
+      header: "Stock Level",
       cell: ({ row }) => {
-        const status = row.getValue("status") as string;
+        const quantity = row.original.active_quantity;
+        const isLowStock = row.original.is_low_stock;
+        const isAvailable = row.original.is_available;
+        const branchType = row.original.branch_type;
+        const retailThreshold = row.original.retail_low_stock_threshold;
+        const wholesaleThreshold = row.original.wholesale_low_stock_threshold;
+
+        const threshold =
+          branchType === "wholesale" ? wholesaleThreshold : retailThreshold;
+
+        let textColorClass = "text-green-600 dark:text-green-400";
+
+        if (!isAvailable) {
+          textColorClass = "text-muted-foreground";
+        } else if (isLowStock) {
+          textColorClass = "text-red-600 dark:text-red-400";
+        }
+
         return (
-          <Badge
-            variant={status === "approved" ? "active" : "secondary"}
-            className={cn(
-              status === "pending" && "bg-yellow-500 hover:bg-yellow-600"
-            )}
-          >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <div className={`font-medium ${textColorClass}`}>{quantity}</div>
+            <div className="text-muted-foreground text-sm">/ {threshold}</div>
+          </div>
         );
       },
     },
+    {
+      accessorKey: "current_expiration_date",
+      header: "Expiry Date",
+      cell: ({ row }) => {
+        const date = new Date(
+          row.getValue("current_expiration_date") as string
+        );
+        const today = new Date();
+        const thirtyDaysFromNow = new Date(
+          today.getTime() + 30 * 24 * 60 * 60 * 1000
+        );
+
+        const textColorClass =
+          date <= thirtyDaysFromNow
+            ? "text-red-600 dark:text-red-400"
+            : "text-muted-foreground";
+
+        return (
+          <div className={`font-medium ${textColorClass}`}>
+            {date.toLocaleDateString()}
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "is_available",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge variant={row.getValue("is_available") ? "success" : "secondary"}>
+          {row.getValue("is_available") ? "Available" : "Unavailable"}
+        </Badge>
+      ),
+    },
   ];
 
-  const totalSales = salesData.reduce((sum, data) => sum + data.sales, 0);
-  const totalProfit = salesData.reduce((sum, data) => sum + data.profit, 0);
-  const grossProfit = totalSales * 0.3; // Assuming 30% gross profit margin
-  const netProfit = totalProfit;
+  const reportColumns: ColumnDef<InventoryReport>[] = [
+    {
+      accessorKey: "id",
+      header: "Report ID",
+    },
+    {
+      accessorKey: "created_at",
+      header: "Created At",
+      cell: ({ row }) => {
+        try {
+          const date = new Date(row.getValue("created_at"));
+          const weekday = date.toLocaleDateString("en-US", { weekday: "long" });
+          const restOfDate = date.toLocaleDateString("en-US", {
+            year: "numeric",
+            month: "short",
+            day: "numeric",
+          });
+          return (
+            <div className="flex items-center gap-1">
+              <span className="font-bold">{weekday}</span>
+              <span>,</span>
+              <span>{restOfDate}</span>
+            </div>
+          );
+        } catch {
+          return "Invalid Date";
+        }
+      },
+    },
+    {
+      id: "period",
+      header: "Period",
+      cell: ({ row }) => {
+        try {
+          const start = new Date(row.original.start_date);
+          const end = new Date(row.original.end_date);
 
-  const chartConfig = {
-    sales: {
-      label: "Sales",
-      color: "hsl(var(--chart-1))",
-    },
-    profit: {
-      label: "Profit",
-      color: "hsl(var(--chart-2))",
-    },
-    Prescription: {
-      label: "Prescription",
-      color: "hsl(var(--chart-1))",
-    },
-    OTC: {
-      label: "OTC",
-      color: "hsl(var(--chart-2))",
-    },
-    "Personal Care": {
-      label: "Personal Care",
-      color: "hsl(var(--chart-3))",
-    },
-    Supplements: {
-      label: "Supplements",
-      color: "hsl(var(--chart-4))",
-    },
-    Other: {
-      label: "Other",
-      color: "hsl(var(--chart-5))",
-    },
-  } satisfies ChartConfig;
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return "Invalid Date Range";
+          }
 
-  if (error || !branch) {
-    return <div>Error loading branch details</div>; // We'll improve this error state later
+          const formatDate = (date: Date) => {
+            const weekday = date.toLocaleDateString("en-US", {
+              weekday: "long",
+            });
+            const restOfDate = date.toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            });
+            return (
+              <div className="flex items-center gap-1">
+                <span className="font-bold">{weekday}</span>
+                <span>,</span>
+                <span>{restOfDate}</span>
+              </div>
+            );
+          };
+
+          return (
+            <div className="flex items-center gap-2">
+              {formatDate(start)}
+              <span>-</span>
+              {formatDate(end)}
+            </div>
+          );
+        } catch {
+          return "Invalid Date Range";
+        }
+      },
+    },
+    {
+      accessorKey: "items_count",
+      header: "Items Count",
+    },
+  ];
+
+  const handleRowClick = (row: InventoryReport) => {
+    router.push(`/reports/${row.id}`);
+  };
+
+  useEffect(() => {
+    const fetchBranchDetails = async () => {
+      try {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+
+        if (!token) {
+          throw new Error("Authentication token not found");
+        }
+
+        const [branchResponse, productsResponse, reportsResponse] =
+          await Promise.all([
+            fetch(
+              `${API_BASE_URL}${API_ENDPOINTS.BRANCHES.GET(Number(params.id))}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            ),
+            fetch(
+              `${API_BASE_URL}${API_ENDPOINTS.BRANCH_PRODUCTS.LIST}?branch_id=${params.id}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            ),
+            fetch(
+              `${API_BASE_URL}${API_ENDPOINTS.INVENTORY.BRANCH(
+                Number(params.id)
+              )}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            ),
+          ]);
+
+        if (!branchResponse.ok || !productsResponse.ok || !reportsResponse.ok) {
+          throw new Error("Failed to fetch branch details");
+        }
+
+        const [branchData, productsData, reportsData] = await Promise.all([
+          branchResponse.json(),
+          productsResponse.json(),
+          reportsResponse.json(),
+        ]);
+
+        setBranch(branchData);
+        setBranchProducts(productsData);
+        setInventoryReports(reportsData);
+      } catch (error) {
+        console.error("Error fetching branch details:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBranchDetails();
+  }, [params.id]);
+
+  if (!branch) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Icons.spinner className="h-8 w-8 animate-spin" />
+      </div>
+    );
   }
 
   return (
@@ -155,8 +295,24 @@ export default function BranchDetails() {
         <TopBar />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">{branch.name}</h1>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">
+                {branch.branch_name}
+              </h1>
+              <p className="text-muted-foreground">
+                {branch.branch_type.charAt(0).toUpperCase() +
+                  branch.branch_type.slice(1)}{" "}
+                Branch • {branch.location}
+              </p>
+            </div>
+            <Badge
+              variant={branch.is_active ? "success" : "secondary"}
+              className="text-sm"
+            >
+              {branch.is_active ? "Active" : "Inactive"}
+            </Badge>
           </div>
+
           <Breadcrumb>
             <BreadcrumbList>
               <BreadcrumbItem>
@@ -164,7 +320,7 @@ export default function BranchDetails() {
               </BreadcrumbItem>
               <BreadcrumbSeparator />
               <BreadcrumbItem>
-                <BreadcrumbPage>{branch.name}</BreadcrumbPage>
+                <BreadcrumbPage>{branch.branch_name}</BreadcrumbPage>
               </BreadcrumbItem>
             </BreadcrumbList>
           </Breadcrumb>
@@ -172,7 +328,7 @@ export default function BranchDetails() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">
+                <CardTitle className="text-sm font-medium">
                   Total Products
                 </CardTitle>
                 <FontAwesomeIcon
@@ -183,11 +339,14 @@ export default function BranchDetails() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {branchInventory.length}
+                  {branchProducts.length}
                 </div>
-                <p className="text-xs text-muted-foreground">In this branch</p>
+                <p className="text-xs text-muted-foreground">
+                  Products in this branch
+                </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -201,16 +360,14 @@ export default function BranchDetails() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {
-                    branchInventory.filter((item) => item.stock_level < 50)
-                      .length
-                  }
+                  {branchProducts.filter((item) => item.is_low_stock).length}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Items with stock below 50
+                  Items below threshold
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -225,9 +382,9 @@ export default function BranchDetails() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {
-                    branchInventory.filter(
+                    branchProducts.filter(
                       (item) =>
-                        new Date(item.expiry_date) <=
+                        new Date(item.current_expiration_date) <=
                         new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
                     ).length
                   }
@@ -237,221 +394,41 @@ export default function BranchDetails() {
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Reports
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faClipboardList}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{branchReports.length}</div>
-                <p className="text-xs text-muted-foreground">
-                  Inventory reports for this branch
-                </p>
-              </CardContent>
-            </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Sales
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faDollarSign}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${totalSales.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">Last 6 months</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Gross Profit
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faChartLine}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${grossProfit.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">Last 6 months</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Net Profit
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faChartLine}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  ${netProfit.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">Last 6 months</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Sales and Profit Trend</CardTitle>
-                <CardDescription>Last 6 months performance</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig}>
-                  <LineChart
-                    data={salesData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tickLine={false}
-                      axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(value) => value.slice(0, 3)}
-                    />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="sales"
-                      stroke="var(--color-sales)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="profit"
-                      stroke="var(--color-profit)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter>
-                <div className="flex w-full items-start gap-2 text-sm">
-                  <div className="grid gap-2">
-                    <div className="flex items-center gap-2 font-medium leading-none">
-                      Trending up by 5.2% this month{" "}
-                      <TrendingUp className="h-4 w-4" />
-                    </div>
-                    <div className="flex items-center gap-2 leading-none text-muted-foreground">
-                      Showing sales and profit for the last 6 months
-                    </div>
-                  </div>
-                </div>
-              </CardFooter>
-            </Card>
-
-            <Card className="col-span-2 flex flex-col md:col-span-1">
-              <CardHeader className="items-center pb-0">
-                <CardTitle>Sales by Category</CardTitle>
-                <CardDescription>Current Month</CardDescription>
-              </CardHeader>
-              <CardContent className="flex-1 pb-0">
-                <ChartContainer config={chartConfig} className="h-full w-full">
-                  <PieChart>
-                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <Pie
-                      data={categorySales}
-                      dataKey="value"
-                      nameKey="name"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {categorySales.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={
-                            chartConfig[entry.name as keyof typeof chartConfig]
-                              .color
-                          }
-                        />
-                      ))}
-                    </Pie>
-                    <ChartLegend
-                      content={<ChartLegendContent nameKey="name" />}
-                      className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
-                    />
-                  </PieChart>
-                </ChartContainer>
-              </CardContent>
-              <CardFooter className="flex-col gap-2 text-sm">
-                <div className="flex items-center gap-2 font-medium leading-none">
-                  Highest category: {categorySales[0].name} (
-                  {(
-                    (categorySales[0].value /
-                      categorySales.reduce(
-                        (sum, item) => sum + item.value,
-                        0
-                      )) *
-                    100
-                  ).toFixed(1)}
-                  %)
-                </div>
-                <div className="leading-none text-muted-foreground">
-                  Showing sales distribution for the current month
-                </div>
-              </CardFooter>
-            </Card>
-          </div>
-
-          <Card className="col-span-4">
+          <Card>
             <CardHeader>
-              <CardTitle>Branch Inventory</CardTitle>
+              <CardTitle>Branch Products</CardTitle>
               <CardDescription>
-                List of all products in this branch
+                Inventory status for {branch.branch_name}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable
-                columns={inventoryColumns}
-                data={branchInventory}
-                filterColumn="product_name"
+                columns={columns}
+                data={branchProducts}
+                enableFiltering
+                enableSorting
+                enableColumnVisibility
               />
             </CardContent>
           </Card>
 
-          <Card className="col-span-4">
+          <Card>
             <CardHeader>
-              <CardTitle>Branch Reports</CardTitle>
+              <CardTitle>Inventory Reports</CardTitle>
               <CardDescription>
-                Inventory reports for this branch
+                Recent inventory reports for {branch.branch_name}
               </CardDescription>
             </CardHeader>
             <CardContent>
               <DataTable
                 columns={reportColumns}
-                data={branchReports}
-                filterColumn="id"
+                data={inventoryReports}
+                enableFiltering
+                enableSorting
+                enableColumnVisibility
+                onRowClick={handleRowClick}
               />
             </CardContent>
           </Card>

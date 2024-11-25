@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   Store,
   Warehouse,
+  Package2,
 } from "lucide-react";
 import {
   Tooltip,
@@ -173,6 +174,7 @@ export function SideNavBar() {
                 { href: "/inventory", icon: Package, label: "Inventory" },
                 { href: "/reports", icon: FileText, label: "Reports" },
                 { href: "/suppliers", icon: Truck, label: "Suppliers" },
+                { href: "/products", icon: Package2, label: "Products" },
               ].map(({ href, icon: Icon, label }) => (
                 <Tooltip key={href}>
                   <TooltipTrigger asChild>

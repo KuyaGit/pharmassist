@@ -16,7 +16,7 @@ export const API_ENDPOINTS = {
     DETAIL: (id: number) => `/branches/${id}`,
   },
   PRODUCTS: {
-    LIST: "/products",
+    LIST: "/products/products",
     CREATE: "/products",
     GET: (id: number) => `/products/${id}`,
     UPDATE: (id: number) => `/products/${id}`,
@@ -35,6 +35,8 @@ export const API_ENDPOINTS = {
     GET: (id: number) => `/inventory-reports/${id}`,
     UPDATE: (id: number) => `/inventory-reports/${id}`,
     DELETE: (id: number) => `/inventory-reports/${id}`,
+    BRANCH: (id: number) => `/inventory-reports/branch/${id}`,
+    MARK_VIEWED: (id: number) => `/inventory-reports/${id}/mark-viewed`,
   },
   CLIENTS: {
     LIST: "/clients",
@@ -56,6 +58,7 @@ export const API_ENDPOINTS = {
     GET: (id: number) => `/expenses/${id}`,
     UPDATE: (id: number) => `/expenses/${id}`,
     DELETE: (id: number) => `/expenses/${id}`,
+    ANALYTICS: "/expenses/analytics",
   },
   SUPPLIERS: {
     LIST: "/suppliers",

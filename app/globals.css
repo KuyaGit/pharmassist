@@ -21,6 +21,38 @@
   .animate-fade-in {
     animation: fadeIn 0.5s ease-out forwards;
   }
+
+  .cursor-context-menu {
+    cursor: context-menu;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  @media print {
+    @page {
+      size: landscape;
+    }
+
+    .print\:hidden {
+      display: none !important;
+    }
+
+    .print\:m-0 {
+      margin: 0 !important;
+    }
+
+    .print\:p-0 {
+      padding: 0 !important;
+    }
+
+    .print\:overflow-visible {
+      overflow: visible !important;
+    }
+
+    .print\:break-inside-avoid {
+      break-inside: avoid;
+    }
+  }
 }
 
 @layer base {
