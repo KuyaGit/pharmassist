@@ -60,6 +60,7 @@ interface DataTableProps<TData, TValue> {
     variant?: "default" | "danger";
   }[];
   onRowClick?: (row: TData) => void;
+  initialSorting?: SortingState;
 }
 
 export function DataTable<TData, TValue>({
@@ -72,8 +73,9 @@ export function DataTable<TData, TValue>({
   filterPlaceholder,
   contextMenuOptions,
   onRowClick,
+  initialSorting,
 }: DataTableProps<TData, TValue>) {
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>(initialSorting || []);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});

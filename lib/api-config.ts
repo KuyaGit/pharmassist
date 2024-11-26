@@ -6,6 +6,10 @@ export const API_ENDPOINTS = {
     LOGOUT: "/auth/logout",
     PROFILE: "/auth/profile",
     HAS_PROFILE: "/auth/has-profile",
+    CREATE_USER: "/auth",
+    UPDATE_PASSWORD: "/auth/password",
+    GET_INITIAL_PASSWORD: (id: number) => `/auth/initial-password/${id}`,
+    LIST_USERS: "/auth/users",
   },
   BRANCHES: {
     LIST: "/branches",

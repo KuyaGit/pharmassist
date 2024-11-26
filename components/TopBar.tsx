@@ -14,6 +14,7 @@ import {
   Truck,
   Search,
   Menu,
+  Users,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import { useBranchTypeStore } from "@/lib/store/branch-type-store";
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Dashboard" },
   { href: "/branches", icon: Building2, label: "Branches" },
+  { href: "/users", icon: Users, label: "Users" },
   { href: "/expenses", icon: DollarSign, label: "Expenses" },
   { href: "/reports", icon: FileText, label: "Reports" },
   { href: "/suppliers", icon: Truck, label: "Suppliers" },
