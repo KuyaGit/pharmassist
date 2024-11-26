@@ -15,6 +15,8 @@ import {
   Search,
   Menu,
   Users,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,8 @@ import { logout } from "@/lib/auth";
 import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useView } from "@/lib/context/ViewContext";
 import { useBranchTypeStore } from "@/lib/store/branch-type-store";
+import { useUser } from "@/lib/context/UserContext";
+import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
 
 const navigationGroups = [
   {
@@ -75,9 +79,41 @@ export function TopBar() {
   const pathname = usePathname();
   const { branchType, setBranchType } = useBranchTypeStore();
   const { user, isLoading } = useCurrentUser();
+  const { setRefreshUser } = useUser();
 
   const isBranchOperations =
     pathname.startsWith("/branches") || pathname.startsWith("/reports");
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = document.cookie.replace(
+          /(?:(?:^|.*;\s*)token\s*=\s*([^;]*).*$)|^.*$/,
+          "$1"
+        );
+        if (!token) return null;
+
+        const profileResponse = await fetch(
+          `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (profileResponse.ok) {
+          const profileData = await profileResponse.json();
+          // Force a re-render by updating user data
+          window.location.reload();
+        }
+      } catch (error) {
+        console.error("Error refreshing user:", error);
+      }
+    };
+
+    setRefreshUser(() => fetchUserData);
+  }, [setRefreshUser]);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 shadow-md">
@@ -196,7 +232,22 @@ export function TopBar() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
+            <DropdownMenuItem asChild className="gap-2 p-2">
+              <Link
+                href="/settings"
+                className="cursor-pointer flex items-center"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Profile settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={logout}
+              className="gap-2 p-2 text-red-600 dark:text-red-400 hover:!text-red-600 dark:hover:!text-red-400 hover:!bg-red-100 dark:hover:!bg-red-900/50 cursor-pointer"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

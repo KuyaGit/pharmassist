@@ -353,7 +353,7 @@ export default function Users() {
           ) : (
             <Badge variant="warning" className="gap-1">
               <AlertCircle className="h-3 w-3" />
-              Initial
+              Temporary
             </Badge>
           )}
         </div>
@@ -371,15 +371,7 @@ export default function Users() {
         return aValue ? 1 : -1;
       },
     },
-    {
-      accessorKey: "role",
-      header: "Role",
-      cell: ({ row }: { row: any }) => (
-        <div className="capitalize">
-          {row.original.role === "pharmacist" ? "Retailer" : row.original.role}
-        </div>
-      ),
-    },
+
     {
       accessorKey: "branch",
       header: "Branch",
@@ -568,7 +560,7 @@ export default function Users() {
                   {users.filter((user) => !user.has_changed_password).length}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Users with initial password
+                  Users with temporary password
                 </p>
               </CardContent>
             </Card>
@@ -651,7 +643,7 @@ export default function Users() {
                         ) : (
                           <Badge variant="warning" className="gap-1">
                             <AlertCircle className="h-3 w-3" />
-                            Initial Password
+                            Temporary Password
                           </Badge>
                         )}
                       </div>
@@ -740,13 +732,16 @@ export default function Users() {
                         </h3>
                         <p className="text-sm text-muted-foreground">
                           {selectedUserForView.has_changed_password
-                            ? "User has changed their initial password"
-                            : "User is still using their initial password"}
+                            ? "User has changed their password"
+                            : "User is still using their temporary password"}
                         </p>
                       </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="outline">
+                          <Button
+                            variant="outline"
+                            className="text-red-600 dark:text-red-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/50 dark:hover:text-red-400"
+                          >
                             <Key className="mr-2 h-4 w-4" />
                             Reset Password
                           </Button>
@@ -769,6 +764,7 @@ export default function Users() {
                               onClick={() =>
                                 handleResetPassword(selectedUserForView.id)
                               }
+                              className="bg-red-600 hover:bg-red-700 dark:bg-red-900 dark:hover:bg-red-800 text-white"
                             >
                               Reset Password
                             </AlertDialogAction>
@@ -781,7 +777,7 @@ export default function Users() {
                       <Card>
                         <CardHeader>
                           <CardTitle className="text-sm">
-                            Initial Password
+                            Temporary Password
                           </CardTitle>
                           <CardDescription>
                             This password is only available until the user
@@ -838,16 +834,16 @@ export default function Users() {
                               ) : (
                                 <>
                                   <Key className="mr-2 h-4 w-4" />
-                                  Get Password
+                                  Get Temporary Password
                                 </>
                               )}
                             </Button>
                           </div>
                           {initialPassword && (
                             <p className="text-sm text-muted-foreground">
-                              Make sure to copy this password and share it
-                              securely with the user. They will be required to
-                              change it on their first login.
+                              Make sure to copy this temporary password and
+                              share it securely with the user. They will be
+                              required to change it on their first login.
                             </p>
                           )}
                         </CardContent>
