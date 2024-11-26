@@ -132,7 +132,7 @@ export default function InventoryReports() {
       cell: ({ row }) => {
         const report = row.original;
         return (
-          <Badge variant={report.isUnviewed ? "active" : "secondary"}>
+          <Badge variant={report.isUnviewed ? "success" : "secondary"}>
             {report.isUnviewed ? "New" : "Viewed"}
           </Badge>
         );

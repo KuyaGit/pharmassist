@@ -44,6 +44,8 @@ import {
   MapPin,
   AlertCircle,
   Clock,
+  Check,
+  X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -124,19 +126,28 @@ export default function Branches() {
     }
   }
 
-  const filteredBranches = branches.filter((branch) => {
-    if (!branch || !branch.branch_name) return false;
+  const filteredBranches = branches
+    .filter((branch) => {
+      if (!branch || !branch.branch_name) return false;
 
-    const matchesSearch = branch.branch_name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" ? branch.is_active : !branch.is_active);
-    const matchesBranchType = branch.branch_type === branchType;
+      const matchesSearch = branch.branch_name
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" ? branch.is_active : !branch.is_active);
+      const matchesBranchType = branch.branch_type === branchType;
 
-    return matchesSearch && matchesStatus && matchesBranchType;
-  });
+      return matchesSearch && matchesStatus && matchesBranchType;
+    })
+    .sort((a, b) => {
+      // First sort by active status
+      if (a.is_active && !b.is_active) return -1;
+      if (!a.is_active && b.is_active) return 1;
+
+      // Then sort alphabetically within each group
+      return a.branch_name.localeCompare(b.branch_name);
+    });
 
   async function handleAddBranch(e: React.FormEvent) {
     e.preventDefault();
@@ -336,42 +347,50 @@ export default function Branches() {
                     !branch.is_active && "opacity-75"
                   )}
                 >
-                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+                  <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 transition-all duration-200 group-hover:scale-75 group-hover:translate-x-4">
                     <Badge
-                      variant={branch.is_active ? "active" : "secondary"}
+                      variant={branch.is_active ? "success" : "secondary"}
                       className={cn(
-                        "px-2 py-1 text-xs font-medium transition-colors",
+                        "transition-all duration-200 group-hover:w-8 group-hover:h-8 group-hover:p-0 group-hover:rounded-full group-hover:flex group-hover:items-center group-hover:justify-center",
                         branch.is_active
                           ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100"
-                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100"
+                          : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100",
+                        "group-hover:[&>span]:hidden"
                       )}
                     >
-                      {branch.is_active ? "Active" : "Inactive"}
+                      <span>{branch.is_active ? "Active" : "Inactive"}</span>
+                      {branch.is_active ? (
+                        <Check className="hidden h-4 w-4 group-hover:block" />
+                      ) : (
+                        <X className="hidden h-4 w-4 group-hover:block" />
+                      )}
                     </Badge>
                     {branch.has_low_stock && (
                       <Badge
                         variant="destructive"
                         className={cn(
-                          "px-2 py-0.5 text-xs font-medium",
+                          "transition-all duration-200 group-hover:w-8 group-hover:h-8 group-hover:p-0 group-hover:rounded-full group-hover:flex group-hover:items-center group-hover:justify-center",
                           "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
-                          "flex items-center gap-1"
+                          "flex items-center gap-1",
+                          "group-hover:[&>span]:hidden"
                         )}
                       >
+                        <span>Low Stock</span>
                         <AlertCircle className="h-3 w-3" />
-                        Low Stock
                       </Badge>
                     )}
                     {branch.has_near_expiry && (
                       <Badge
                         variant="warning"
                         className={cn(
-                          "px-2 py-0.5 text-xs font-medium",
+                          "transition-all duration-200 group-hover:w-8 group-hover:h-8 group-hover:p-0 group-hover:rounded-full group-hover:flex group-hover:items-center group-hover:justify-center",
                           "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-                          "flex items-center gap-1"
+                          "flex items-center gap-1",
+                          "group-hover:[&>span]:hidden"
                         )}
                       >
+                        <span>Near Expiry</span>
                         <Clock className="h-3 w-3" />
-                        Near Expiry
                       </Badge>
                     )}
                   </div>
@@ -386,14 +405,17 @@ export default function Branches() {
                     </CardDescription>
                   </div>
 
-                  <CardFooter className="mt-auto">
+                  <CardFooter className="p-4 pt-0">
                     <Button
                       asChild
-                      variant="default"
-                      className="w-full transition-all hover:translate-x-1"
+                      size="sm"
+                      className="hover:translate-x-1 transition-all"
                     >
-                      <Link href={`/branches/${branch.id}`}>
-                        <span className="flex-1">View Details</span>
+                      <Link
+                        href={`/branches/${branch.id}`}
+                        className="flex items-center"
+                      >
+                        View Details
                         <ArrowRight className="ml-2 h-4 w-4" />
                       </Link>
                     </Button>

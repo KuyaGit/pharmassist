@@ -653,6 +653,8 @@ export default function Products() {
                 enableFiltering
                 enableSorting
                 enableColumnVisibility
+                filterColumn={["name"]}
+                filterPlaceholder="Search by product name..."
               />
             </CardContent>
           </Card>

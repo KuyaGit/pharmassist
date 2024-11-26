@@ -96,7 +96,7 @@ export default function BranchDetails() {
         const status = row.getValue("status") as string;
         return (
           <Badge
-            variant={status === "approved" ? "active" : "secondary"}
+            variant={status === "approved" ? "success" : "secondary"}
             className={cn(
               status === "pending" && "bg-yellow-500 hover:bg-yellow-600"
             )}

@@ -721,7 +721,11 @@ export default function Expenses() {
               <DataTable
                 columns={columns}
                 data={expenses}
-                filterColumn="type"
+                enableFiltering
+                enableSorting
+                enableColumnVisibility
+                filterColumn={["name", "vendor"]}
+                filterPlaceholder="Search by expense name or vendor..."
                 contextMenuOptions={(row: Expense) => [
                   {
                     label: "Edit",
