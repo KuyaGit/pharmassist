@@ -36,14 +36,32 @@ import { useCurrentUser } from "@/lib/hooks/useCurrentUser";
 import { useView } from "@/lib/context/ViewContext";
 import { useBranchTypeStore } from "@/lib/store/branch-type-store";
 
-const navItems = [
-  { href: "/dashboard", icon: Home, label: "Dashboard" },
-  { href: "/branches", icon: Building2, label: "Branches" },
-  { href: "/users", icon: Users, label: "Users" },
-  { href: "/expenses", icon: DollarSign, label: "Expenses" },
-  { href: "/reports", icon: FileText, label: "Reports" },
-  { href: "/suppliers", icon: Truck, label: "Suppliers" },
-  { href: "/products", icon: Package2, label: "Products" },
+const navigationGroups = [
+  {
+    groupName: "Overview",
+    items: [{ href: "/dashboard", icon: Home, label: "Dashboard" }],
+  },
+  {
+    groupName: "Branch Operations",
+    items: [
+      { href: "/branches", icon: Building2, label: "Branches" },
+      { href: "/reports", icon: FileText, label: "Reports" },
+    ],
+  },
+  {
+    groupName: "Inventory",
+    items: [
+      { href: "/products", icon: Package2, label: "Products" },
+      { href: "/suppliers", icon: Truck, label: "Suppliers" },
+    ],
+  },
+  {
+    groupName: "Management",
+    items: [
+      { href: "/users", icon: Users, label: "Users" },
+      { href: "/expenses", icon: DollarSign, label: "Expenses" },
+    ],
+  },
 ];
 
 function getGreeting() {
@@ -57,6 +75,9 @@ export function TopBar() {
   const pathname = usePathname();
   const { branchType, setBranchType } = useBranchTypeStore();
   const { user, isLoading } = useCurrentUser();
+
+  const isBranchOperations =
+    pathname.startsWith("/branches") || pathname.startsWith("/reports");
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 shadow-md">
@@ -83,39 +104,47 @@ export function TopBar() {
               <Tabs
                 value={branchType}
                 onValueChange={(value) =>
+                  isBranchOperations &&
                   setBranchType(value as "retail" | "wholesale")
                 }
               >
                 <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger
-                    value="retail"
-                    className="text-zinc-600 dark:text-zinc-200"
-                  >
+                  <TabsTrigger value="retail" disabled={!isBranchOperations}>
                     Retail
                   </TabsTrigger>
-                  <TabsTrigger
-                    value="wholesale"
-                    className="text-zinc-600 dark:text-zinc-200"
-                  >
+                  <TabsTrigger value="wholesale" disabled={!isBranchOperations}>
                     Wholesale
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
-            {navItems.map(({ href, icon: Icon, label }) => (
-              <Link
-                key={href}
-                href={href}
+            {navigationGroups.map((group, groupIndex) => (
+              <div
+                key={group.groupName}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
-                  pathname.startsWith(href)
-                    ? "bg-background text-foreground font-semibold"
-                    : "text-primary-foreground"
+                  "py-2",
+                  groupIndex !== 0 && "border-t border-primary-foreground/20"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                {label}
-              </Link>
+                <div className="px-3 py-2 text-xs uppercase text-primary-foreground/70">
+                  {group.groupName}
+                </div>
+                {group.items.map(({ href, icon: Icon, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
+                      pathname.startsWith(href)
+                        ? "bg-background text-foreground font-semibold"
+                        : "text-primary-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
             ))}
           </nav>
         </SheetContent>

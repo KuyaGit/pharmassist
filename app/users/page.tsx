@@ -39,8 +39,22 @@ import {
   Eye,
   EyeOff,
   Copy,
+  Users as UsersIcon,
+  Store,
+  Building2,
 } from "lucide-react";
 import { Row } from "@tanstack/react-table";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface User {
   id: number;
@@ -234,6 +248,64 @@ export default function Users() {
     }
   };
 
+  const handleResetPassword = async (userId: number) => {
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.AUTH.RESET_PASSWORD(userId)}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to reset password");
+      }
+
+      const data = await response.json();
+      toast.success("Password reset successfully", {
+        description: (
+          <div className="mt-2 rounded-md bg-muted p-2">
+            <p>New password for {data.username}:</p>
+            <code className="mt-2 block font-mono text-sm">
+              {data.temporary_password}
+            </code>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Make sure to copy and share this password securely with the user.
+            </p>
+          </div>
+        ),
+        duration: 10000,
+      });
+
+      // Update the selected user's password status in the UI
+      if (selectedUserForView) {
+        setSelectedUserForView({
+          ...selectedUserForView,
+          has_changed_password: false,
+        });
+      }
+
+      // Refresh user data and reset states
+      fetchUsers();
+      setInitialPassword(data.temporary_password);
+      setShowPassword(true);
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reset password"
+      );
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchBranches();
@@ -339,11 +411,11 @@ export default function Users() {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden bg-muted/40">
       <SideNavBar />
-      <div className="flex-1">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
-        <main className="flex-1 space-y-8 p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-3xl font-bold tracking-tight">
               User Management
@@ -437,6 +509,69 @@ export default function Users() {
                 </form>
               </DialogContent>
             </Dialog>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Total Users
+                </CardTitle>
+                <UsersIcon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{users.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  Active user accounts
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Retailers</CardTitle>
+                <Store className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((user) => user.role === "pharmacist").length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Retail pharmacy users
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Wholesalers
+                </CardTitle>
+                <Building2 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((user) => user.role === "wholesaler").length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Wholesale pharmacy users
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Pending Setup
+                </CardTitle>
+                <AlertCircle className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {users.filter((user) => !user.has_changed_password).length}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Users with initial password
+                </p>
+              </CardContent>
+            </Card>
           </div>
 
           <Card>
@@ -596,71 +731,129 @@ export default function Users() {
                     </div>
                   )}
 
-                  {/* Password Section */}
-                  {!selectedUserForView.has_changed_password && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">Initial Password</h3>
-                      <div className="max-w-[50%] space-y-4">
-                        <div className="flex items-center gap-4">
-                          <div className="relative flex-1">
-                            <div className="flex h-10 w-full items-center rounded-md border bg-muted px-3 font-mono text-sm">
-                              {initialPassword
-                                ? showPassword
-                                  ? initialPassword
-                                  : "••••••••"
-                                : "••••••••"}
-                              {initialPassword && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="sm"
-                                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                                  onClick={() => setShowPassword(!showPassword)}
-                                >
-                                  {showPassword ? (
-                                    <EyeOff className="h-4 w-4" />
-                                  ) : (
-                                    <Eye className="h-4 w-4" />
-                                  )}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              if (!initialPassword) {
-                                getInitialPassword(selectedUserForView.id);
-                              } else {
-                                navigator.clipboard.writeText(initialPassword);
-                                toast.success("Password copied to clipboard");
-                              }
-                            }}
-                          >
-                            {initialPassword ? (
-                              <>
-                                <Copy className="mr-2 h-4 w-4" />
-                                Copy
-                              </>
-                            ) : (
-                              <>
-                                <Key className="mr-2 h-4 w-4" />
-                                Get Password
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                        {initialPassword && (
-                          <p className="text-sm text-muted-foreground">
-                            Make sure to copy this password and share it
-                            securely with the user. They will be required to
-                            change it on their first login.
-                          </p>
-                        )}
+                  {/* Password Management Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-medium">
+                          Password Management
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedUserForView.has_changed_password
+                            ? "User has changed their initial password"
+                            : "User is still using their initial password"}
+                        </p>
                       </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline">
+                            <Key className="mr-2 h-4 w-4" />
+                            Reset Password
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Reset User Password
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will reset the password for user "
+                              {selectedUserForView.username}". A new temporary
+                              password will be generated. The user will need to
+                              change this password on their next login.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                handleResetPassword(selectedUserForView.id)
+                              }
+                            >
+                              Reset Password
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
-                  )}
+
+                    {!selectedUserForView.has_changed_password && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle className="text-sm">
+                            Initial Password
+                          </CardTitle>
+                          <CardDescription>
+                            This password is only available until the user
+                            changes it
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center gap-4">
+                            <div className="relative flex-1">
+                              <div className="flex h-10 w-full items-center rounded-md border bg-muted px-3 font-mono text-sm">
+                                {initialPassword
+                                  ? showPassword
+                                    ? initialPassword
+                                    : "••••••••"
+                                  : "••••••••"}
+                                {initialPassword && (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                                    onClick={() =>
+                                      setShowPassword(!showPassword)
+                                    }
+                                  >
+                                    {showPassword ? (
+                                      <EyeOff className="h-4 w-4" />
+                                    ) : (
+                                      <Eye className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                if (!initialPassword) {
+                                  getInitialPassword(selectedUserForView.id);
+                                } else {
+                                  navigator.clipboard.writeText(
+                                    initialPassword
+                                  );
+                                  toast.success("Password copied to clipboard");
+                                }
+                              }}
+                            >
+                              {initialPassword ? (
+                                <>
+                                  <Copy className="mr-2 h-4 w-4" />
+                                  Copy
+                                </>
+                              ) : (
+                                <>
+                                  <Key className="mr-2 h-4 w-4" />
+                                  Get Password
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                          {initialPassword && (
+                            <p className="text-sm text-muted-foreground">
+                              Make sure to copy this password and share it
+                              securely with the user. They will be required to
+                              change it on their first login.
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
               )}
             </DialogContent>

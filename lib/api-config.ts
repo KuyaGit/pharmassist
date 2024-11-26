@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     CREATE_USER: "/auth",
     UPDATE_PASSWORD: "/auth/password",
     GET_INITIAL_PASSWORD: (id: number) => `/auth/initial-password/${id}`,
+    RESET_PASSWORD: (id: number) => `/auth/reset-password/${id}`,
     LIST_USERS: "/auth/users",
   },
   BRANCHES: {

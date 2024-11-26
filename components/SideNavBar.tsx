@@ -36,9 +36,40 @@ export function SideNavBar() {
   const { isCollapsed, toggleCollapse, isInitialized } = useSidebar();
   const { branchType, setBranchType } = useBranchTypeStore();
 
+  const isBranchOperations =
+    pathname.startsWith("/branches") || pathname.startsWith("/reports");
+
   if (!isInitialized) {
     return null;
   }
+
+  const navigationGroups = [
+    {
+      groupName: "Overview",
+      items: [{ href: "/dashboard", icon: Home, label: "Dashboard" }],
+    },
+    {
+      groupName: "Branch Operations",
+      items: [
+        { href: "/branches", icon: Building2, label: "Branches" },
+        { href: "/reports", icon: FileText, label: "Reports" },
+      ],
+    },
+    {
+      groupName: "Inventory",
+      items: [
+        { href: "/products", icon: Package2, label: "Products" },
+        { href: "/suppliers", icon: Truck, label: "Suppliers" },
+      ],
+    },
+    {
+      groupName: "Management",
+      items: [
+        { href: "/users", icon: Users, label: "Users" },
+        { href: "/expenses", icon: DollarSign, label: "Expenses" },
+      ],
+    },
+  ];
 
   return (
     <div
@@ -106,13 +137,16 @@ export function SideNavBar() {
         <div className={cn("px-2 py-2", isCollapsed && "flex justify-center")}>
           <Tabs
             value={branchType}
-            onValueChange={(value) => setBranchType(value as BranchType)}
+            onValueChange={(value) =>
+              isBranchOperations && setBranchType(value as BranchType)
+            }
             className={cn("w-full", isCollapsed && "flex flex-col")}
           >
             <TabsList
               className={cn(
                 "w-full",
-                isCollapsed ? "flex-col h-auto space-y-2" : "grid grid-cols-2"
+                isCollapsed ? "flex-col h-auto space-y-2" : "grid grid-cols-2",
+                !isBranchOperations && ""
               )}
             >
               <TooltipProvider>
@@ -123,8 +157,10 @@ export function SideNavBar() {
                         value="retail"
                         className={cn(
                           "flex items-center justify-center w-full",
-                          isCollapsed && "p-2"
+                          isCollapsed && "p-2",
+                          !isBranchOperations && ""
                         )}
+                        disabled={!isBranchOperations}
                       >
                         {isCollapsed ? <Store className="h-4 w-4" /> : "Retail"}
                       </TabsTrigger>
@@ -132,7 +168,11 @@ export function SideNavBar() {
                   </TooltipTrigger>
                   {isCollapsed && (
                     <TooltipContent side="right">
-                      <p>Retail</p>
+                      <p>
+                        Retail
+                        {!isBranchOperations &&
+                          " (Only available in Branch Operations)"}
+                      </p>
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -143,8 +183,10 @@ export function SideNavBar() {
                         value="wholesale"
                         className={cn(
                           "flex items-center justify-center w-full",
-                          isCollapsed && "p-2"
+                          isCollapsed && "p-2",
+                          !isBranchOperations && ""
                         )}
+                        disabled={!isBranchOperations}
                       >
                         {isCollapsed ? (
                           <Warehouse className="h-4 w-4" />
@@ -156,7 +198,11 @@ export function SideNavBar() {
                   </TooltipTrigger>
                   {isCollapsed && (
                     <TooltipContent side="right">
-                      <p>Wholesale</p>
+                      <p>
+                        Wholesale
+                        {!isBranchOperations &&
+                          " (Only available in Branch Operations)"}
+                      </p>
                     </TooltipContent>
                   )}
                 </Tooltip>
@@ -167,37 +213,44 @@ export function SideNavBar() {
         <div className="flex-1">
           <nav className="grid items-start px-2 transition-all duration-300 overflow-hidden text-sm font-medium md:px-4">
             <TooltipProvider>
-              {[
-                { href: "/dashboard", icon: Home, label: "Dashboard" },
-                { href: "/branches", icon: Building2, label: "Branches" },
-                { href: "/users", icon: Users, label: "Users" },
-                { href: "/expenses", icon: DollarSign, label: "Expenses" },
-                { href: "/reports", icon: FileText, label: "Reports" },
-                { href: "/suppliers", icon: Truck, label: "Suppliers" },
-                { href: "/products", icon: Package2, label: "Products" },
-              ].map(({ href, icon: Icon, label }) => (
-                <Tooltip key={href}>
-                  <TooltipTrigger asChild>
-                    <Link
-                      href={href}
-                      className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
-                        pathname.startsWith(href)
-                          ? "bg-background text-foreground font-semibold"
-                          : "text-primary-foreground",
-                        isCollapsed && "justify-center px-0"
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {!isCollapsed && label}
-                    </Link>
-                  </TooltipTrigger>
-                  {isCollapsed && (
-                    <TooltipContent side="right">
-                      <p>{label}</p>
-                    </TooltipContent>
+              {navigationGroups.map((group, groupIndex) => (
+                <div
+                  key={group.groupName}
+                  className={cn(
+                    "py-2",
+                    groupIndex !== 0 && "border-t border-primary-foreground/20"
                   )}
-                </Tooltip>
+                >
+                  {!isCollapsed && (
+                    <div className="px-3 py-2 text-xs uppercase text-primary-foreground/70">
+                      {group.groupName}
+                    </div>
+                  )}
+                  {group.items.map(({ href, icon: Icon, label }) => (
+                    <Tooltip key={href}>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href={href}
+                          className={cn(
+                            "flex items-center gap-3 rounded-lg px-3 py-2 my-1 transition-all hover:bg-background hover:text-foreground",
+                            pathname.startsWith(href)
+                              ? "bg-background text-foreground font-semibold"
+                              : "text-primary-foreground",
+                            isCollapsed && "justify-center px-0"
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {!isCollapsed && label}
+                        </Link>
+                      </TooltipTrigger>
+                      {isCollapsed && (
+                        <TooltipContent side="right">
+                          <p>{label}</p>
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  ))}
+                </div>
               ))}
             </TooltipProvider>
           </nav>
