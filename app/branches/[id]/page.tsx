@@ -33,6 +33,8 @@ import {
   faExclamationTriangle,
   faClock,
   faMoneyBillWave,
+  faChartLine,
+  faPencil,
 } from "@fortawesome/free-solid-svg-icons";
 import { Button } from "@/components/ui/button";
 import { Pencil } from "lucide-react";
@@ -411,14 +413,22 @@ export default function BranchDetails() {
                 Branch • {branch.location}
               </p>
             </div>
-            <Button
-              size="sm"
-              className="gap-2"
-              onClick={() => setIsEditDialogOpen(true)}
-            >
-              <Pencil className="h-4 w-4" />
-              Edit Branch Details
-            </Button>
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                onClick={() => router.push(`/branches/${params.id}/analytics`)}
+              >
+                <FontAwesomeIcon icon={faChartLine} className="mr-2 h-4 w-4" />
+                Analytics
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditDialogOpen(true)}
+              >
+                <FontAwesomeIcon icon={faPencil} className="mr-2 h-4 w-4" />
+                Edit Branch
+              </Button>
+            </div>
           </div>
 
           <Breadcrumb>

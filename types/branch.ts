@@ -36,3 +36,9 @@ export interface CategorySales {
   name: string;
   value: number;
 }
+
+export interface TopProduct {
+  name: string;
+  value: number;
+  quantity: number;
+}

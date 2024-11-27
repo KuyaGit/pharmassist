@@ -48,3 +48,11 @@ export interface ExpenseAnalytics {
     amount: number;
   }>;
 }
+
+export interface ExpenseDataPoint {
+  id: number;
+  date: string;
+  amount: number;
+  type: string;
+  description: string;
+}

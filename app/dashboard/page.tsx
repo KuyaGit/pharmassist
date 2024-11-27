@@ -1,67 +1,171 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { SideNavBar } from "@/components/SideNavBar";
 import { TopBar } from "@/components/TopBar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faDollarSign,
-  faUsers,
-  faCreditCard,
-  faChartLine,
-  faArrowUpRightFromSquare,
-  faHourglass2,
-  faArrowTrendDown,
-  faPercent,
-  faChartBar,
-  faPesoSign,
-  faClockRotateLeft,
-  faClock,
-  faBoxesStacked,
   faCashRegister,
-  faHandHoldingDollar,
   faSackDollar,
+  faHandHoldingDollar,
+  faChartLine,
+  faBoxesStacked,
+  faClock,
+  faShoppingCart,
+  faStore,
+  faMoneyBillTrendUp,
+  faScaleBalanced,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import Link from "next/link";
+  LineChart,
+  BarChart,
+  PieChart,
+  Line,
+  Bar,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { DataTable } from "@/components/DataTable";
+import { TrendingUp, TrendingDown } from "lucide-react";
+import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
+import { formatCurrency } from "@/lib/utils";
+
+const formatPercentage = (value: number | undefined | null): string => {
+  return value ? value.toFixed(1) : "0.0";
+};
+
+const getChangeClass = (
+  change: number | undefined | null,
+  inverse: boolean = false
+): string => {
+  if (!change) return "text-muted-foreground";
+  const isPositive = change >= 0;
+  return isPositive
+    ? inverse
+      ? "text-red-600 dark:text-red-400"
+      : "text-green-600 dark:text-green-400"
+    : inverse
+    ? "text-green-600 dark:text-green-400"
+    : "text-red-600 dark:text-red-400";
+};
 
 export default function Dashboard() {
+  const [timeRange, setTimeRange] = useState("30d");
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [timeRange]);
+
+  const fetchAnalytics = async () => {
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      if (!token) {
+        window.location.href = "/pharmassist";
+        return;
+      }
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.ANALYTICS.OVERVIEW}?time_range=${timeRange}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch analytics");
+
+      const data = await response.json();
+      setAnalytics(data);
+    } catch (error) {
+      console.error("Error fetching analytics:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const chartConfig = {
+    revenue: {
+      label: "Revenue",
+      color: "hsl(var(--chart-1))",
+    },
+    expenses: {
+      label: "Expenses",
+      color: "hsl(var(--chart-2))",
+    },
+    profit: {
+      label: "Profit",
+      color: "hsl(var(--chart-3))",
+    },
+  };
+
+  if (isLoading || !analytics) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="overflow-hidden bg-muted/40 flex h-screen">
+    <div className="flex h-screen overflow-hidden bg-muted/40">
       <SideNavBar />
-      <div className="overflow-hidden flex-1 flex flex-col">
+      <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
-        <main className="overflow-y-auto flex-1 p-4 md:p-6 lg:p-8 space-y-4">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
           <div className="flex items-center justify-between">
             <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">Last 7 days</SelectItem>
+                <SelectItem value="30d">Last 30 days</SelectItem>
+                <SelectItem value="90d">Last 90 days</SelectItem>
+                <SelectItem value="1y">Last year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          {/* Key Performance Metrics */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">Total Sales</CardTitle>
+                <CardTitle className="text-sm font-bold">
+                  Total Revenue
+                </CardTitle>
                 <FontAwesomeIcon
                   icon={faCashRegister}
                   size="2x"
@@ -69,16 +173,71 @@ export default function Dashboard() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$45,231.89</div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(analytics.total_revenue)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
+                  <span
+                    className={`flex items-center gap-1 ${getChangeClass(
+                      analytics?.revenue_change
+                    )}`}
+                  >
+                    {analytics?.revenue_change >= 0 ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                    {formatPercentage(analytics?.revenue_change)}% from previous
+                    period
+                  </span>
                 </p>
               </CardContent>
             </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-bold">
                   Gross Profit
+                </CardTitle>
+                <FontAwesomeIcon
+                  icon={faMoneyBillTrendUp}
+                  size="2x"
+                  className="text-icon"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(analytics?.gross_profit || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatPercentage(analytics?.gross_profit_margin)}% margin
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-bold">Net Profit</CardTitle>
+                <FontAwesomeIcon
+                  icon={faScaleBalanced}
+                  size="2x"
+                  className="text-icon"
+                />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(analytics?.net_profit || 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatPercentage(analytics?.net_profit_margin)}% margin
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-bold">
+                  Total Expenses
                 </CardTitle>
                 <FontAwesomeIcon
                   icon={faSackDollar}
@@ -87,282 +246,177 @@ export default function Dashboard() {
                 />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">+2350</div>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(analytics.total_expenses)}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +180.1% from last month
+                  <span
+                    className={`flex items-center gap-1 ${getChangeClass(
+                      analytics?.expenses_change,
+                      true
+                    )}`}
+                  >
+                    {analytics?.expenses_change >= 0 ? (
+                      <TrendingUp className="h-4 w-4" />
+                    ) : (
+                      <TrendingDown className="h-4 w-4" />
+                    )}
+                    {formatPercentage(analytics?.expenses_change)}% from
+                    previous period
+                  </span>
                 </p>
               </CardContent>
             </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">Net Income</CardTitle>
-                <FontAwesomeIcon
-                  icon={faHandHoldingDollar}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">+12,234</div>
-                <p className="text-xs text-muted-foreground">
-                  +19% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">Near Expiry</CardTitle>
-                <FontAwesomeIcon
-                  icon={faClock}
-                  size="2x"
-                  className="text-warning"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">573</div>
-                <p className="text-xs text-muted-foreground">from 3 branches</p>
-              </CardContent>
-            </Card>
+          </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">Low Stock</CardTitle>
-                <FontAwesomeIcon
-                  icon={faBoxesStacked}
-                  size="2x"
-                  className="text-destructive"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">173</div>
-                <p className="text-xs text-muted-foreground">from 6 branches</p>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="grid gap-4 md:gap-8 lg:grid-cols-2 xl:grid-cols-3">
-            <Card className="xl:col-span-2" x-chunk="dashboard-01-chunk-4">
-              <CardHeader className="flex flex-row items-center">
-                <div className="grid gap-2">
-                  <CardTitle>Transactions</CardTitle>
+          <Tabs defaultValue="overview" className="space-y-4">
+            <TabsList>
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="branches">Branches</TabsTrigger>
+              <TabsTrigger value="products">Products</TabsTrigger>
+              <TabsTrigger value="expenses">Expenses</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview">
+              <div className="grid gap-4 md:grid-cols-7">
+                <Card className="col-span-4">
+                  <CardHeader>
+                    <CardTitle>Revenue vs Expenses</CardTitle>
+                    <CardDescription>
+                      Comparison over the selected period
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={chartConfig}>
+                      <LineChart
+                        data={analytics.timeline_data}
+                        margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                        />
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tickMargin={8}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="revenue"
+                          stroke={chartConfig.revenue.color}
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="expenses"
+                          stroke={chartConfig.expenses.color}
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="profit"
+                          stroke={chartConfig.profit.color}
+                          strokeWidth={2}
+                          dot={false}
+                        />
+                      </LineChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-3">
+                  <CardHeader>
+                    <CardTitle>Top Performing Branches</CardTitle>
+                    <CardDescription>By revenue</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer config={chartConfig}>
+                      <BarChart
+                        data={analytics.branch_performance.slice(0, 5)}
+                        layout="vertical"
+                        margin={{ top: 10, right: 30, left: 100, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          horizontal={false}
+                        />
+                        <XAxis type="number" />
+                        <YAxis
+                          dataKey="branch_name"
+                          type="category"
+                          tickLine={false}
+                          axisLine={false}
+                        />
+                        <ChartTooltip
+                          cursor={false}
+                          content={<ChartTooltipContent />}
+                        />
+                        <Bar
+                          dataKey="total_sales"
+                          fill={chartConfig.revenue.color}
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="branches">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Branch Performance</CardTitle>
                   <CardDescription>
-                    Recent transactions from your store.
+                    Detailed metrics for all branches
                   </CardDescription>
-                </div>
-                <Button asChild size="sm" className="ml-auto gap-1">
-                  <Link href="#">
-                    View All
-                    <FontAwesomeIcon
-                      icon={faArrowUpRightFromSquare}
-                      className="h-4 w-4"
-                    />
-                  </Link>
-                </Button>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Customer</TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Type
-                      </TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Status
-                      </TableHead>
-                      <TableHead className="hidden xl:table-column">
-                        Date
-                      </TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Liam Johnson</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          liam@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-23
-                      </TableCell>
-                      <TableCell className="text-right">$250.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Olivia Smith</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          olivia@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Refund
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Declined
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-24
-                      </TableCell>
-                      <TableCell className="text-right">$150.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Noah Williams</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          noah@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Subscription
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-25
-                      </TableCell>
-                      <TableCell className="text-right">$350.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Emma Brown</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          emma@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-26
-                      </TableCell>
-                      <TableCell className="text-right">$450.00</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>
-                        <div className="font-medium">Liam Johnson</div>
-                        <div className="hidden text-sm text-muted-foreground md:inline">
-                          liam@example.com
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        Sale
-                      </TableCell>
-                      <TableCell className="hidden xl:table-column">
-                        <Badge className="text-xs" variant="outline">
-                          Approved
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell lg:hidden xl:table-column">
-                        2023-06-27
-                      </TableCell>
-                      <TableCell className="text-right">$550.00</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-            <Card x-chunk="dashboard-01-chunk-5">
-              <CardHeader>
-                <CardTitle>Recent Sales</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-8">
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/01.png" alt="Avatar" />
-                    <AvatarFallback>OM</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Olivia Martin
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      olivia.martin@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">+$1,999.00</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/02.png" alt="Avatar" />
-                    <AvatarFallback>JL</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Jackson Lee
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      jackson.lee@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">+$39.00</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/03.png" alt="Avatar" />
-                    <AvatarFallback>IN</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Isabella Nguyen
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      isabella.nguyen@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">+$299.00</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/04.png" alt="Avatar" />
-                    <AvatarFallback>WK</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      William Kim
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      will@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">+$99.00</div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <Avatar className="hidden h-9 w-9 sm:flex">
-                    <AvatarImage src="/avatars/05.png" alt="Avatar" />
-                    <AvatarFallback>SD</AvatarFallback>
-                  </Avatar>
-                  <div className="grid gap-1">
-                    <p className="text-sm font-medium leading-none">
-                      Sofia Davis
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      sofia.davis@email.com
-                    </p>
-                  </div>
-                  <div className="ml-auto font-medium">+$39.00</div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                </CardHeader>
+                <CardContent>
+                  <DataTable
+                    columns={[
+                      {
+                        accessorKey: "branch_name",
+                        header: "Branch Name",
+                      },
+                      {
+                        accessorKey: "total_sales",
+                        header: "Revenue",
+                        cell: ({ row }) =>
+                          formatCurrency(row.getValue("total_sales")),
+                      },
+                      {
+                        accessorKey: "total_expenses",
+                        header: "Expenses",
+                        cell: ({ row }) =>
+                          formatCurrency(row.getValue("total_expenses")),
+                      },
+                      {
+                        accessorKey: "profit",
+                        header: "Profit",
+                        cell: ({ row }) =>
+                          formatCurrency(row.getValue("profit")),
+                      },
+                    ]}
+                    data={analytics.branch_performance}
+                    enableFiltering
+                    enableSorting
+                    filterColumn="branch_name"
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Continue with Products and Expenses tabs... */}
+          </Tabs>
         </main>
       </div>
     </div>

@@ -73,4 +73,9 @@ export const API_ENDPOINTS = {
     UPDATE: (id: number) => `/suppliers/${id}`,
     DELETE: (id: number) => `/suppliers/${id}`,
   },
+  ANALYTICS: {
+    OVERVIEW: "/analytics/overview",
+    BRANCH: "/analytics/branch",
+    PRODUCTS: "/analytics/products",
+  },
 } as const;

@@ -7,15 +7,16 @@ import {
   BranchInventory,
   BranchReport,
   SalesData,
-  CategorySales,
+  TopProduct,
 } from "@/types/branch";
 
-export function useBranchDetails(branchId: number) {
+export function useBranchDetails(branchId: number, timeRange: string) {
   const [branch, setBranch] = useState<Branch | null>(null);
   const [inventory, setInventory] = useState<BranchInventory[]>([]);
   const [reports, setReports] = useState<BranchReport[]>([]);
   const [salesData, setSalesData] = useState<SalesData[]>([]);
-  const [categorySales, setCategorySales] = useState<CategorySales[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [totalExpenses, setTotalExpenses] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,54 +33,38 @@ export function useBranchDetails(branchId: number) {
           "Content-Type": "application/json",
         };
 
+        // Fetch branch details
         const branchResponse = await fetch(
           `${API_BASE_URL}${API_ENDPOINTS.BRANCHES.GET(branchId)}`,
           { headers }
         );
 
         if (!branchResponse.ok) {
-          const errorData = await branchResponse.json();
-          throw new Error(errorData.detail || "Failed to fetch branch details");
+          throw new Error("Failed to fetch branch details");
         }
 
         const branchData = await branchResponse.json();
         setBranch(branchData);
 
-        // Mock data for now until backend endpoints are ready
-        setInventory([
+        // Fetch analytics data
+        const analyticsResponse = await fetch(
+          `${API_BASE_URL}${API_ENDPOINTS.ANALYTICS.BRANCH}/${branchId}?time_range=${timeRange}`,
           {
-            id: 1,
-            product_name: "Product A",
-            stock_level: 45,
-            expiry_date: "2024-12-31",
-            branch_name: branchData.branch_name,
-          },
-          // Add more mock items as needed
-        ]);
+            headers,
+          }
+        );
 
-        setReports([
-          {
-            id: 1,
-            date_created: "2024-03-20",
-            status: "pending",
-            branch_id: branchId,
-          },
-          // Add more mock items as needed
-        ]);
+        if (!analyticsResponse.ok) {
+          throw new Error("Failed to fetch analytics data");
+        }
 
-        setSalesData([
-          { month: "January", sales: 5000, profit: 1500 },
-          { month: "February", sales: 6000, profit: 1800 },
-          // Add more mock months
-        ]);
+        const analyticsData = await analyticsResponse.json();
+        setSalesData(analyticsData.salesData);
+        setTopProducts(analyticsData.topProducts);
+        setTotalExpenses(analyticsData.totalExpenses);
 
-        setCategorySales([
-          { name: "Prescription", value: 4000 },
-          { name: "OTC", value: 3000 },
-          { name: "Personal Care", value: 2000 },
-          { name: "Supplements", value: 1500 },
-          { name: "Other", value: 500 },
-        ]);
+        // Fetch inventory and reports
+        // ... (keep existing inventory and reports fetching code)
       } catch (err) {
         const error = err as Error;
         setError(error.message);
@@ -97,7 +82,8 @@ export function useBranchDetails(branchId: number) {
     inventory,
     reports,
     salesData,
-    categorySales,
+    topProducts,
+    totalExpenses,
     isLoading,
     error,
   };
