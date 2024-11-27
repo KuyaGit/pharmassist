@@ -93,6 +93,8 @@ export function SideNavBar() {
                   width={40}
                   height={40}
                   className="object-contain bg-white rounded-lg p-1"
+                  priority
+                  loading="eager"
                 />
               </Link>
               <div

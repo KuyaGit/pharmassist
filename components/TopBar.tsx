@@ -78,7 +78,7 @@ function getGreeting() {
 export function TopBar() {
   const pathname = usePathname();
   const { branchType, setBranchType } = useBranchTypeStore();
-  const { user, isLoading } = useCurrentUser();
+  const { user, isLoading, setUser } = useCurrentUser();
   const { setRefreshUser } = useUser();
 
   const isBranchOperations =
@@ -104,8 +104,15 @@ export function TopBar() {
 
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
-          // Force a re-render by updating user data
-          window.location.reload();
+          // Update the user data with all required properties
+          setUser({
+            username: profileData.username || "",
+            role: profileData.role || "",
+            branch_id: profileData.branch_id,
+            profile: profileData,
+            full_name: `${profileData.first_name} ${profileData.last_name}`,
+            email: profileData.email,
+          });
         }
       } catch (error) {
         console.error("Error refreshing user:", error);
@@ -113,7 +120,7 @@ export function TopBar() {
     };
 
     setRefreshUser(() => fetchUserData);
-  }, [setRefreshUser]);
+  }, [setRefreshUser, setUser]);
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 bg-primary text-primary-foreground px-4 lg:h-[60px] lg:px-6 shadow-md">

@@ -75,14 +75,31 @@ export default function PasswordSettings() {
         }
       );
 
+      const responseData = await response.json();
+
       if (!response.ok) {
+        if (responseData.detail === "Current password is incorrect") {
+          form.setError("current_password", {
+            type: "manual",
+            message: "Current password is incorrect",
+          });
+          setIsLoading(false);
+          return;
+        }
         throw new Error("Failed to update password");
       }
 
       toast.success("Password updated successfully");
       form.reset();
     } catch (error) {
-      toast.error("Failed to update password");
+      if (
+        !(
+          error instanceof Error &&
+          error.message === "Current password is incorrect"
+        )
+      ) {
+        toast.error("Failed to update password");
+      }
     } finally {
       setIsLoading(false);
     }

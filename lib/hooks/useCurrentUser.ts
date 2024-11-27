@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
+import { useUser } from "@/lib/context/UserContext";
 
 interface UserProfile {
   first_name: string;
@@ -23,7 +24,7 @@ interface User {
 }
 
 export function useCurrentUser() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, setUser } = useUser();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -67,7 +68,7 @@ export function useCurrentUser() {
     }
 
     fetchUser();
-  }, []);
+  }, [setUser]);
 
-  return { user, isLoading };
+  return { user, isLoading, setUser };
 }
