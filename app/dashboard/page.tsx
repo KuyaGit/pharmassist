@@ -31,6 +31,8 @@ import {
   faStore,
   faMoneyBillTrendUp,
   faScaleBalanced,
+  faMoneyBillWave,
+  faWarehouse,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   LineChart,
@@ -55,7 +57,52 @@ import {
 import { DataTable } from "@/components/DataTable";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
-import { formatCurrency } from "@/lib/utils";
+import {
+  formatCurrency,
+  getMetricTitle,
+  getTimeRangeDescription,
+} from "@/lib/utils";
+import { TimeRange } from "@/types/analytics";
+import { Badge } from "@/components/ui/badge";
+import { ReactNode } from "react";
+import { format } from "date-fns";
+
+interface BranchPerformance {
+  branch_id: number;
+  branch_name: string;
+  total_sales: number;
+  revenue: number;
+  total_expenses: number;
+  profit: number;
+}
+
+interface Analytics {
+  total_revenue: number;
+  total_sales: number;
+  total_expenses: number;
+  gross_profit: number;
+  net_profit: number;
+  profit_margin: number;
+  active_branches: number;
+  branch_performance: BranchPerformance[];
+  top_products: Array<{
+    id: number;
+    name: string;
+    total_sales: number;
+    revenue: number;
+    profit_margin: number;
+  }>;
+  revenue_trend: Array<{
+    timestamp: string;
+    value: number;
+  }>;
+  inventory: {
+    total_products: number;
+    low_stock_count: number;
+    out_of_stock_count: number;
+    near_expiry_count: number;
+  };
+}
 
 const formatPercentage = (value: number | undefined | null): string => {
   return value ? value.toFixed(1) : "0.0";
@@ -77,9 +124,9 @@ const getChangeClass = (
 };
 
 export default function Dashboard() {
-  const [timeRange, setTimeRange] = useState("30d");
-  const [analytics, setAnalytics] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<TimeRange>("30d");
+  const [analytics, setAnalytics] = useState<Analytics | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAnalytics();
@@ -98,45 +145,40 @@ export default function Dashboard() {
       }
 
       const response = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.ANALYTICS.OVERVIEW}?time_range=${timeRange}`,
+        `${API_BASE_URL}${API_ENDPOINTS.ANALYTICS.ROOT}?time_range=${timeRange}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
 
-      if (!response.ok) throw new Error("Failed to fetch analytics");
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(errorData || "Failed to fetch analytics");
+      }
 
       const data = await response.json();
       setAnalytics(data);
+      setError(null);
     } catch (error) {
       console.error("Error fetching analytics:", error);
-    } finally {
-      setIsLoading(false);
+      setError(error instanceof Error ? error.message : "An error occurred");
     }
   };
 
   const chartConfig = {
     revenue: {
-      label: "Revenue",
-      color: "hsl(var(--chart-1))",
+      label: { label: "Revenue" },
+      color: { color: "hsl(var(--chart-1))" },
     },
     expenses: {
-      label: "Expenses",
-      color: "hsl(var(--chart-2))",
+      label: { label: "Expenses" },
+      color: { color: "hsl(var(--chart-2))" },
     },
     profit: {
-      label: "Profit",
-      color: "hsl(var(--chart-3))",
+      label: { label: "Profit" },
+      color: { color: "hsl(var(--chart-3))" },
     },
   };
-
-  if (isLoading || !analytics) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -144,165 +186,154 @@ export default function Dashboard() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-            <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select time range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7d">Last 7 days</SelectItem>
-                <SelectItem value="30d">Last 30 days</SelectItem>
-                <SelectItem value="90d">Last 90 days</SelectItem>
-                <SelectItem value="1y">Last year</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Key Performance Metrics */}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">
-                  Total Revenue
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faCashRegister}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(analytics.total_revenue)}
+          {error ? (
+            <div className="text-destructive">{error}</div>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h1 className="text-3xl font-bold tracking-tight">
+                    Dashboard
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Overall performance metrics across all branches
+                  </p>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  <span
-                    className={`flex items-center gap-1 ${getChangeClass(
-                      analytics?.revenue_change
-                    )}`}
-                  >
-                    {analytics?.revenue_change >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                    {formatPercentage(analytics?.revenue_change)}% from previous
-                    period
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
+                <Select
+                  value={timeRange}
+                  onValueChange={(value: TimeRange) => setTimeRange(value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select time range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="7d">Last 7 days</SelectItem>
+                    <SelectItem value="30d">Last 30 days</SelectItem>
+                    <SelectItem value="90d">Last 90 days</SelectItem>
+                    <SelectItem value="1y">Last year</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">
-                  Gross Profit
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faMoneyBillTrendUp}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(analytics?.gross_profit || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatPercentage(analytics?.gross_profit_margin)}% margin
-                </p>
-              </CardContent>
-            </Card>
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Revenue
+                    </CardTitle>
+                    <FontAwesomeIcon
+                      icon={faMoneyBillWave}
+                      size="2x"
+                      className="text-icon"
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      ₱{analytics?.total_revenue?.toLocaleString() ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {getTimeRangeDescription(timeRange)}
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">Net Profit</CardTitle>
-                <FontAwesomeIcon
-                  icon={faScaleBalanced}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(analytics?.net_profit || 0)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {formatPercentage(analytics?.net_profit_margin)}% margin
-                </p>
-              </CardContent>
-            </Card>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Total Sales
+                    </CardTitle>
+                    <FontAwesomeIcon
+                      icon={faCashRegister}
+                      size="2x"
+                      className="text-icon"
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {analytics?.total_sales?.toLocaleString() ?? 0} units
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Across all branches
+                    </p>
+                  </CardContent>
+                </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-bold">
-                  Total Expenses
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faSackDollar}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(analytics.total_expenses)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  <span
-                    className={`flex items-center gap-1 ${getChangeClass(
-                      analytics?.expenses_change,
-                      true
-                    )}`}
-                  >
-                    {analytics?.expenses_change >= 0 ? (
-                      <TrendingUp className="h-4 w-4" />
-                    ) : (
-                      <TrendingDown className="h-4 w-4" />
-                    )}
-                    {formatPercentage(analytics?.expenses_change)}% from
-                    previous period
-                  </span>
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Profit Margin
+                    </CardTitle>
+                    <FontAwesomeIcon
+                      icon={faChartLine}
+                      size="2x"
+                      className="text-icon"
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {(analytics?.profit_margin ?? 0).toFixed(2)}%
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Overall profit margin
+                    </p>
+                  </CardContent>
+                </Card>
 
-          <Tabs defaultValue="overview" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="branches">Branches</TabsTrigger>
-              <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="expenses">Expenses</TabsTrigger>
-            </TabsList>
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">
+                      Active Branches
+                    </CardTitle>
+                    <FontAwesomeIcon
+                      icon={faWarehouse}
+                      size="2x"
+                      className="text-icon"
+                    />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {analytics?.active_branches ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Currently operating branches
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
 
-            <TabsContent value="overview">
               <div className="grid gap-4 md:grid-cols-7">
                 <Card className="col-span-4">
                   <CardHeader>
-                    <CardTitle>Revenue vs Expenses</CardTitle>
+                    <CardTitle>
+                      {getMetricTitle(timeRange)} Revenue Trend
+                    </CardTitle>
                     <CardDescription>
-                      Comparison over the selected period
+                      {getTimeRangeDescription(timeRange)}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ChartContainer config={chartConfig}>
+                    <ChartContainer config={chartConfig.revenue}>
                       <LineChart
-                        data={analytics.timeline_data}
+                        data={analytics?.revenue_trend ?? []}
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <XAxis
-                          dataKey="date"
+                          dataKey="timestamp"
                           tickLine={false}
                           axisLine={false}
                           tickMargin={8}
+                          tickFormatter={(value) =>
+                            format(new Date(value), "MMM d")
+                          }
                         />
                         <YAxis
                           tickLine={false}
                           axisLine={false}
                           tickMargin={8}
+                          tickFormatter={(value) =>
+                            `₱${value.toLocaleString()}`
+                          }
                         />
                         <ChartTooltip
                           cursor={false}
@@ -310,22 +341,8 @@ export default function Dashboard() {
                         />
                         <Line
                           type="monotone"
-                          dataKey="revenue"
-                          stroke={chartConfig.revenue.color}
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="expenses"
-                          stroke={chartConfig.expenses.color}
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="profit"
-                          stroke={chartConfig.profit.color}
+                          dataKey="value"
+                          stroke={chartConfig.revenue.color.color}
                           strokeWidth={2}
                           dot={false}
                         />
@@ -337,86 +354,124 @@ export default function Dashboard() {
                 <Card className="col-span-3">
                   <CardHeader>
                     <CardTitle>Top Performing Branches</CardTitle>
-                    <CardDescription>By revenue</CardDescription>
+                    <CardDescription>
+                      By revenue in {getTimeRangeDescription(timeRange)}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ChartContainer config={chartConfig}>
-                      <BarChart
-                        data={analytics.branch_performance.slice(0, 5)}
-                        layout="vertical"
-                        margin={{ top: 10, right: 30, left: 100, bottom: 0 }}
-                      >
-                        <CartesianGrid
-                          strokeDasharray="3 3"
-                          horizontal={false}
-                        />
-                        <XAxis type="number" />
-                        <YAxis
-                          dataKey="branch_name"
-                          type="category"
-                          tickLine={false}
-                          axisLine={false}
-                        />
-                        <ChartTooltip
-                          cursor={false}
-                          content={<ChartTooltipContent />}
-                        />
-                        <Bar
-                          dataKey="total_sales"
-                          fill={chartConfig.revenue.color}
-                        />
-                      </BarChart>
-                    </ChartContainer>
+                    <div className="space-y-4">
+                      {analytics?.branch_performance
+                        ?.sort((a, b) => b.revenue - a.revenue)
+                        ?.slice(0, 5)
+                        ?.map((branch, index) => (
+                          <div
+                            key={branch.branch_id}
+                            className="flex items-center"
+                          >
+                            <div className="w-8 text-sm font-medium">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {branch.branch_name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {branch.total_sales?.toLocaleString() ?? 0}{" "}
+                                units sold
+                              </div>
+                            </div>
+                            <div className="w-24 text-right text-sm font-medium">
+                              ₱{branch.revenue?.toLocaleString() ?? 0}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
-            </TabsContent>
 
-            <TabsContent value="branches">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Branch Performance</CardTitle>
-                  <CardDescription>
-                    Detailed metrics for all branches
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <DataTable
-                    columns={[
-                      {
-                        accessorKey: "branch_name",
-                        header: "Branch Name",
-                      },
-                      {
-                        accessorKey: "total_sales",
-                        header: "Revenue",
-                        cell: ({ row }) =>
-                          formatCurrency(row.getValue("total_sales")),
-                      },
-                      {
-                        accessorKey: "total_expenses",
-                        header: "Expenses",
-                        cell: ({ row }) =>
-                          formatCurrency(row.getValue("total_expenses")),
-                      },
-                      {
-                        accessorKey: "profit",
-                        header: "Profit",
-                        cell: ({ row }) =>
-                          formatCurrency(row.getValue("profit")),
-                      },
-                    ]}
-                    data={analytics.branch_performance}
-                    enableFiltering
-                    enableSorting
-                    filterColumn="branch_name"
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Top Products</CardTitle>
+                    <CardDescription>
+                      Best selling products by revenue
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {analytics?.top_products
+                        ?.slice(0, 5)
+                        ?.map((product, index) => (
+                          <div key={product.id} className="flex items-center">
+                            <div className="w-8 text-sm font-medium">
+                              {index + 1}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate">
+                                {product.name}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {product.total_sales?.toLocaleString() ?? 0}{" "}
+                                units sold
+                              </div>
+                            </div>
+                            <div className="w-24 text-right text-sm font-medium">
+                              ₱{product.revenue?.toLocaleString() ?? 0}
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Continue with Products and Expenses tabs... */}
-          </Tabs>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Inventory Status</CardTitle>
+                    <CardDescription>Overall inventory health</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">
+                          Total Products
+                        </span>
+                        <span className="text-sm font-medium">
+                          {analytics?.inventory?.total_products ?? 0}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">
+                          Low Stock Items
+                        </span>
+                        <Badge variant="destructive">
+                          {analytics?.inventory?.low_stock_count ?? 0} products
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">
+                          Out of Stock
+                        </span>
+                        <Badge variant="destructive">
+                          {analytics?.inventory?.out_of_stock_count ?? 0}{" "}
+                          products
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">
+                          Near Expiry
+                        </span>
+                        <Badge variant="warning">
+                          {analytics?.inventory?.near_expiry_count ?? 0}{" "}
+                          products
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </main>
       </div>
     </div>

@@ -23,7 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable } from "@/components/DataTable";
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, Row } from "@tanstack/react-table";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBoxes, faTag, faChartLine } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -50,6 +50,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 interface Product {
   id: number;
@@ -127,6 +128,7 @@ export default function Products() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const router = useRouter();
 
   const fetchProducts = async () => {
     try {
@@ -384,6 +386,10 @@ export default function Products() {
       variant: "danger" as const,
     },
   ];
+
+  const handleRowClick = (row: Product) => {
+    router.push(`/products/${row.id}/analytics`);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -655,6 +661,7 @@ export default function Products() {
                 enableColumnVisibility
                 filterColumn={["name"]}
                 filterPlaceholder="Search by product name..."
+                onRowClick={handleRowClick}
               />
             </CardContent>
           </Card>

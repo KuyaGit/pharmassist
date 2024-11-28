@@ -899,23 +899,29 @@ export default function BranchDetails() {
                         <div className="text-sm text-muted-foreground">
                           <p>
                             Highest expense: ₱
-                            {sortedExpenses[0]?.amount.toLocaleString()} (
-                            {format(new Date(sortedExpenses[0]?.date), "MMM d")}
-                            )
+                            {sortedExpenses[0]?.amount.toLocaleString()}{" "}
+                            {sortedExpenses[0]?.date
+                              ? `(${format(
+                                  new Date(sortedExpenses[0].date),
+                                  "MMM d"
+                                )})`
+                              : "(No date)"}
                           </p>
                           <p>
                             Lowest expense: ₱
                             {sortedExpenses[
                               sortedExpenses.length - 1
                             ]?.amount.toLocaleString()}{" "}
-                            (
-                            {format(
-                              new Date(
-                                sortedExpenses[sortedExpenses.length - 1]?.date
-                              ),
-                              "MMM d"
-                            )}
-                            )
+                            {sortedExpenses[sortedExpenses.length - 1]?.date
+                              ? `(${format(
+                                  new Date(
+                                    sortedExpenses[
+                                      sortedExpenses.length - 1
+                                    ].date
+                                  ),
+                                  "MMM d"
+                                )})`
+                              : "(No date)"}
                           </p>
                         </div>
                       </>

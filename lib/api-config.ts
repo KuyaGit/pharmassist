@@ -24,7 +24,7 @@ export const API_ENDPOINTS = {
   PRODUCTS: {
     LIST: "/products/products",
     CREATE: "/products",
-    GET: (id: number) => `/products/${id}`,
+    GET: (id: number) => `/products?product_id=${id}`,
     UPDATE: (id: number) => `/products/${id}`,
     DELETE: (id: number) => `/products/${id}`,
   },
@@ -74,8 +74,9 @@ export const API_ENDPOINTS = {
     DELETE: (id: number) => `/suppliers/${id}`,
   },
   ANALYTICS: {
-    OVERVIEW: "/analytics/overview",
+    ROOT: "/analytics",
     BRANCH: "/analytics/branch",
-    PRODUCTS: "/analytics/products",
+    PRODUCT: "/analytics/product",
+    INVENTORY: "/analytics/inventory",
   },
 } as const;
