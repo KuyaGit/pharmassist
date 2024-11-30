@@ -26,6 +26,7 @@ import {
   faWarehouse,
   faChartBar,
   faExclamationTriangle,
+  faMoneyBill,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Breadcrumb,
@@ -76,6 +77,17 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 import { updateProduct } from "@/lib/api-utils";
 import { cn } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DataTable } from "@/components/DataTable";
+import { ColumnDef } from "@tanstack/react-table";
+import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 
 interface BranchStock {
   id: number;
@@ -83,7 +95,119 @@ interface BranchStock {
   stock: number;
   is_available: boolean;
   branch_type: "retail" | "wholesale";
+  is_low_stock: boolean;
 }
+
+interface BranchPerformanceWithStock extends BranchStock {
+  quantity: number;
+  revenue: number;
+}
+
+interface EditProductForm {
+  name: string;
+  cost: number;
+  srp: number;
+  is_retail_available: boolean;
+  is_wholesale_available: boolean;
+  retail_low_stock_threshold: number;
+  wholesale_low_stock_threshold: number;
+}
+
+const combinedColumns: ColumnDef<BranchPerformanceWithStock>[] = [
+  {
+    accessorKey: "name",
+    enableSorting: true,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Branch Name" align="left" />
+    ),
+    cell: ({ row }) => <div>{row.getValue("name")}</div>,
+  },
+  {
+    accessorKey: "branch_type",
+    enableSorting: false,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Type" align="left" />
+    ),
+    cell: ({ row }) => (
+      <div>
+        <Badge variant="outline" className="capitalize">
+          {row.getValue("branch_type")}
+        </Badge>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "stock",
+    enableSorting: true,
+    header: ({ column }) => (
+      <DataTableColumnHeader
+        column={column}
+        title="Current Stock"
+        align="left"
+      />
+    ),
+    cell: ({ row }) => {
+      const stock = row.getValue("stock") as number;
+      const isLowStock = row.original.is_low_stock;
+      return (
+        <div className="flex items-center gap-2">
+          <span className={cn(isLowStock && "text-destructive")}>
+            {stock} units
+          </span>
+          {isLowStock && (
+            <Badge variant="destructive" className="text-xs">
+              Low
+            </Badge>
+          )}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "quantity",
+    enableSorting: true,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Units Sold" align="left" />
+    ),
+    cell: ({ row }) => {
+      const quantity = row.getValue("quantity") as number;
+      return <div>{quantity?.toLocaleString() ?? 0} units</div>;
+    },
+  },
+  {
+    accessorKey: "revenue",
+    enableSorting: true,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Revenue" align="right" />
+    ),
+    cell: ({ row }) => {
+      const revenue = row.getValue("revenue") as number;
+      const isRetail = row.original.branch_type === "retail";
+
+      if (!isRetail) {
+        return <div className="text-right">Variable pricing</div>;
+      }
+
+      return (
+        <div className="text-right">₱{revenue?.toLocaleString() ?? 0}</div>
+      );
+    },
+  },
+  {
+    accessorKey: "is_available",
+    enableSorting: false,
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Status" align="left" />
+    ),
+    cell: ({ row }) => (
+      <div>
+        <Badge variant={row.getValue("is_available") ? "success" : "secondary"}>
+          {row.getValue("is_available") ? "Available" : "Unavailable"}
+        </Badge>
+      </div>
+    ),
+  },
+];
 
 export default function ProductDetails() {
   const params = useParams();
@@ -288,28 +412,65 @@ export default function ProductDetails() {
                 <div className="text-2xl font-bold">
                   {productData?.total_sales?.quantity ?? 0} units
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  ₱{productData?.total_sales?.revenue?.toLocaleString() ?? 0}{" "}
-                  revenue
-                </p>
+                {product?.is_retail_available ? (
+                  <p className="text-xs text-muted-foreground">
+                    ₱{productData?.total_sales?.revenue?.toLocaleString() ?? 0}{" "}
+                    revenue
+                  </p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Revenue varies (wholesale pricing)
+                  </p>
+                )}
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Current Price
+                  {product?.is_retail_available &&
+                  product?.is_wholesale_available
+                    ? "Retail Price"
+                    : product?.is_retail_available
+                    ? "Retail Price"
+                    : "Base Price"}
                 </CardTitle>
-                <FontAwesomeIcon icon={faTag} size="2x" className="text-icon" />
+                <FontAwesomeIcon
+                  icon={faMoneyBill}
+                  size="2x"
+                  className="text-icon"
+                />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  ₱{productData?.current_price?.srp?.toLocaleString() ?? 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Cost: ₱
-                  {productData?.current_price?.cost?.toLocaleString() ?? 0}
-                </p>
+                {product?.is_retail_available ? (
+                  <>
+                    <div className="text-2xl font-bold">
+                      ₱{product?.srp?.toLocaleString() ?? 0}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">
+                        Cost: ₱{product?.cost?.toLocaleString() ?? 0}
+                      </p>
+                      <Badge variant="outline" className="text-success">
+                        {(
+                          (((product?.srp ?? 0) - (product?.cost ?? 0)) /
+                            (product?.cost ?? 1)) *
+                          100
+                        ).toFixed(2)}
+                        % retail margin
+                      </Badge>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-2xl font-bold">
+                      ₱{product?.cost?.toLocaleString() ?? 0}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Base cost for wholesale pricing
+                    </p>
+                  </>
+                )}
               </CardContent>
             </Card>
 
@@ -352,7 +513,7 @@ export default function ProductDetails() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-3">
             <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -393,119 +554,7 @@ export default function ProductDetails() {
             <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Branch Stocks
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faWarehouse}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div
-                  className="space-y-2 overflow-y-auto"
-                  style={{ maxHeight: "120px" }}
-                >
-                  {(() => {
-                    const branchStocks = [
-                      ...(productData?.stock_analytics?.branch_stocks || []),
-                    ];
-                    const lowStockBranches = branchStocks.filter(
-                      (branch) => branch.is_low_stock
-                    );
-                    const normalStockBranches = branchStocks.filter(
-                      (branch) => !branch.is_low_stock
-                    );
-
-                    return (
-                      <>
-                        {lowStockBranches.length > 0 && (
-                          <>
-                            <div className="flex items-center gap-2 pb-1">
-                              <div className="h-px flex-1 bg-border" />
-                              <span className="text-xs font-medium text-destructive">
-                                Low Stock Branches
-                              </span>
-                              <div className="h-px flex-1 bg-border" />
-                            </div>
-                            {lowStockBranches
-                              .sort((a, b) => a.stock - b.stock)
-                              .map((branch) => (
-                                <div
-                                  key={branch.id}
-                                  className="flex items-center justify-between"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-medium">
-                                      {branch.name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {branch.branch_type}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium text-destructive">
-                                      {branch.stock} units
-                                    </span>
-                                    <Badge
-                                      variant="destructive"
-                                      className="text-xs"
-                                    >
-                                      Low
-                                    </Badge>
-                                  </div>
-                                </div>
-                              ))}
-                          </>
-                        )}
-
-                        {normalStockBranches.length > 0 && (
-                          <>
-                            {lowStockBranches.length > 0 && (
-                              <div className="h-px bg-border my-2" />
-                            )}
-                            <div className="flex items-center gap-2 pb-1">
-                              <div className="h-px flex-1 bg-border" />
-                              <span className="text-xs font-medium text-muted-foreground">
-                                Normal Stock Branches
-                              </span>
-                              <div className="h-px flex-1 bg-border" />
-                            </div>
-                            {normalStockBranches
-                              .sort((a, b) => b.stock - a.stock)
-                              .map((branch) => (
-                                <div
-                                  key={branch.id}
-                                  className="flex items-center justify-between"
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-sm font-medium">
-                                      {branch.name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground">
-                                      {branch.branch_type}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm font-medium">
-                                      {branch.stock} units
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                          </>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-1">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Retail Inventory Alert
+                  Retail Stock Alert Settings
                 </CardTitle>
                 {product?.is_retail_available ? (
                   <ShieldCheck className="h-6 w-6 text-success" />
@@ -517,7 +566,7 @@ export default function ProductDetails() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      Status
+                      Retail Availability
                     </span>
                     <Badge
                       variant={
@@ -531,7 +580,7 @@ export default function ProductDetails() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      Alert Threshold
+                      Low Stock Alert At
                     </span>
                     <span className="text-xl font-bold">
                       {product?.retail_low_stock_threshold ?? 0} units
@@ -539,12 +588,18 @@ export default function ProductDetails() {
                   </div>
                 </div>
               </CardContent>
+              <CardFooter>
+                <p className="text-xs text-muted-foreground">
+                  Branches will be flagged when retail stock falls below this
+                  threshold
+                </p>
+              </CardFooter>
             </Card>
 
             <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Wholesale Inventory Alert
+                  Wholesale Stock Alert Settings
                 </CardTitle>
                 {product?.is_wholesale_available ? (
                   <ShieldCheck className="h-6 w-6 text-success" />
@@ -556,7 +611,7 @@ export default function ProductDetails() {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      Status
+                      Wholesale Availability
                     </span>
                     <Badge
                       variant={
@@ -572,7 +627,7 @@ export default function ProductDetails() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">
-                      Alert Threshold
+                      Low Stock Alert At
                     </span>
                     <span className="text-xl font-bold">
                       {product?.wholesale_low_stock_threshold ?? 0} units
@@ -580,6 +635,12 @@ export default function ProductDetails() {
                   </div>
                 </div>
               </CardContent>
+              <CardFooter>
+                <p className="text-xs text-muted-foreground">
+                  Branches will be flagged when wholesale stock falls below this
+                  threshold
+                </p>
+              </CardFooter>
             </Card>
           </div>
 
@@ -734,6 +795,37 @@ export default function ProductDetails() {
               </CardFooter>
             </Card>
           </div>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle>Branch Performance & Stock</CardTitle>
+              <CardDescription>Combined branch analytics</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                columns={combinedColumns}
+                data={
+                  productData?.stock_analytics?.branch_stocks.map(
+                    (branchStock: BranchStock) => {
+                      const performance = branchPerformance?.find(
+                        (bp) => bp.branch_name === branchStock.name
+                      );
+                      return {
+                        ...branchStock,
+                        quantity: performance?.quantity ?? 0,
+                        revenue: performance?.revenue ?? 0,
+                      };
+                    }
+                  ) || []
+                }
+                enableSorting
+                enableFiltering
+                enableColumnVisibility
+                filterColumn="name"
+                filterPlaceholder="Search branches..."
+              />
+            </CardContent>
+          </Card>
         </main>
       </div>
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -803,6 +895,57 @@ export default function ProductDetails() {
                         ? {
                             ...selectedProduct,
                             srp: parseFloat(e.target.value),
+                          }
+                        : null
+                    )
+                  }
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-retail-threshold" className="text-right">
+                  Retail Threshold
+                </Label>
+                <Input
+                  id="edit-retail-threshold"
+                  type="number"
+                  className="col-span-3"
+                  value={selectedProduct?.retail_low_stock_threshold || 0}
+                  onChange={(e) =>
+                    setSelectedProduct(
+                      selectedProduct
+                        ? {
+                            ...selectedProduct,
+                            retail_low_stock_threshold: parseInt(
+                              e.target.value
+                            ),
+                          }
+                        : null
+                    )
+                  }
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label
+                  htmlFor="edit-wholesale-threshold"
+                  className="text-right"
+                >
+                  Wholesale Threshold
+                </Label>
+                <Input
+                  id="edit-wholesale-threshold"
+                  type="number"
+                  className="col-span-3"
+                  value={selectedProduct?.wholesale_low_stock_threshold || 0}
+                  onChange={(e) =>
+                    setSelectedProduct(
+                      selectedProduct
+                        ? {
+                            ...selectedProduct,
+                            wholesale_low_stock_threshold: parseInt(
+                              e.target.value
+                            ),
                           }
                         : null
                     )

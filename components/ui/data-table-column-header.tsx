@@ -15,19 +15,46 @@ interface DataTableColumnHeaderProps<TData, TValue>
   extends React.HTMLAttributes<HTMLDivElement> {
   column: Column<TData, TValue>;
   title: string;
+
+  align?: "left" | "center" | "right";
 }
 
 export function DataTableColumnHeader<TData, TValue>({
   column,
   title,
+  align = "left",
   className,
 }: DataTableColumnHeaderProps<TData, TValue>) {
   if (!column.getCanSort()) {
-    return <div className={cn(className)}>{title}</div>;
+    return (
+      <div
+        className={cn(
+          "flex",
+          {
+            "justify-start": align === "left",
+            "justify-center": align === "center",
+            "justify-end": align === "right",
+          },
+          className
+        )}
+      >
+        {title}
+      </div>
+    );
   }
 
   return (
-    <div className={cn("flex items-center space-x-2", className)}>
+    <div
+      className={cn(
+        "flex",
+        {
+          "justify-start": align === "left",
+          "justify-center": align === "center",
+          "justify-end": align === "right",
+        },
+        className
+      )}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
