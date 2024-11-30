@@ -73,6 +73,9 @@ import { EditProductDialog } from "@/components/EditProductDialog";
 import { CheckCircle2Icon, XCircleIcon, AlertCircleIcon } from "lucide-react";
 import { Product } from "@/types/products";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useProductAnalytics } from "@/hooks/useProductAnalytics";
+import { updateProduct } from "@/lib/api-utils";
+import { cn } from "@/lib/utils";
 
 interface BranchStock {
   id: number;
@@ -86,9 +89,6 @@ export default function ProductDetails() {
   const params = useParams();
   const productId = parseInt(params.id as string);
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
-  const [productData, setProductData] = useState<any>(null);
-  const [priceHistory, setPriceHistory] = useState<any[]>([]);
-  const [branchPerformance, setBranchPerformance] = useState<any[]>([]);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const router = useRouter();
   const [product, setProduct] = useState<any>(null);
@@ -128,38 +128,9 @@ export default function ProductDetails() {
   useEffect(() => {
     fetchProductDetails();
   }, [productId]);
-  const fetchProductAnalytics = async () => {
-    try {
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("token="))
-        ?.split("=")[1];
 
-      if (!token) throw new Error("Authentication token not found");
-
-      const response = await fetch(
-        `${API_BASE_URL}/analytics/products/${productId}?time_range=${timeRange}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch product analytics");
-      const data = await response.json();
-      setProductData(data);
-      setPriceHistory(data.price_history);
-      setBranchPerformance(data.branch_performance);
-    } catch (err) {
-      console.error("Error fetching product analytics:", err);
-    }
-  };
-
-  useEffect(() => {
-    fetchProductAnalytics();
-  }, [productId, timeRange]);
+  const { productData, priceHistory, branchPerformance, refetch } =
+    useProductAnalytics(productId, timeRange);
 
   const chartConfig = {
     sales: {
@@ -187,32 +158,14 @@ export default function ProductDetails() {
 
     setIsLoading(true);
     try {
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("token="))
-        ?.split("=")[1];
-
-      const response = await fetch(
-        `${API_BASE_URL}/products/${selectedProduct.id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(selectedProduct),
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to update product");
-
+      await updateProduct(selectedProduct.id, selectedProduct);
       await fetchProductDetails();
+      await refetch();
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
       showToast("Product updated successfully", "success");
     } catch (error) {
       showToast("Failed to update product", "error");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -399,7 +352,7 @@ export default function ProductDetails() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             <Card className="col-span-1">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -435,6 +388,118 @@ export default function ProductDetails() {
                   stock
                 </Badge>
               </CardFooter>
+            </Card>
+
+            <Card className="col-span-1">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Branch Stocks
+                </CardTitle>
+                <FontAwesomeIcon
+                  icon={faWarehouse}
+                  size="2x"
+                  className="text-icon"
+                />
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="space-y-2 overflow-y-auto"
+                  style={{ maxHeight: "120px" }}
+                >
+                  {(() => {
+                    const branchStocks = [
+                      ...(productData?.stock_analytics?.branch_stocks || []),
+                    ];
+                    const lowStockBranches = branchStocks.filter(
+                      (branch) => branch.is_low_stock
+                    );
+                    const normalStockBranches = branchStocks.filter(
+                      (branch) => !branch.is_low_stock
+                    );
+
+                    return (
+                      <>
+                        {lowStockBranches.length > 0 && (
+                          <>
+                            <div className="flex items-center gap-2 pb-1">
+                              <div className="h-px flex-1 bg-border" />
+                              <span className="text-xs font-medium text-destructive">
+                                Low Stock Branches
+                              </span>
+                              <div className="h-px flex-1 bg-border" />
+                            </div>
+                            {lowStockBranches
+                              .sort((a, b) => a.stock - b.stock)
+                              .map((branch) => (
+                                <div
+                                  key={branch.id}
+                                  className="flex items-center justify-between"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">
+                                      {branch.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {branch.branch_type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-destructive">
+                                      {branch.stock} units
+                                    </span>
+                                    <Badge
+                                      variant="destructive"
+                                      className="text-xs"
+                                    >
+                                      Low
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        )}
+
+                        {normalStockBranches.length > 0 && (
+                          <>
+                            {lowStockBranches.length > 0 && (
+                              <div className="h-px bg-border my-2" />
+                            )}
+                            <div className="flex items-center gap-2 pb-1">
+                              <div className="h-px flex-1 bg-border" />
+                              <span className="text-xs font-medium text-muted-foreground">
+                                Normal Stock Branches
+                              </span>
+                              <div className="h-px flex-1 bg-border" />
+                            </div>
+                            {normalStockBranches
+                              .sort((a, b) => b.stock - a.stock)
+                              .map((branch) => (
+                                <div
+                                  key={branch.id}
+                                  className="flex items-center justify-between"
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium">
+                                      {branch.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {branch.branch_type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium">
+                                      {branch.stock} units
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                          </>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </CardContent>
             </Card>
 
             <Card className="col-span-1">
