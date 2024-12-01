@@ -72,7 +72,7 @@ interface BranchProduct {
   branch_id: number;
   quantity: number;
   peso_value: number;
-  current_expiration_date: string;
+  current_expiration_date: string | null;
   is_low_stock: boolean;
   active_quantity: number;
   is_available: boolean;
@@ -82,6 +82,8 @@ interface BranchProduct {
   retail_low_stock_threshold: number;
   wholesale_low_stock_threshold: number;
   product_name: string;
+  days_in_low_stock: number;
+  low_stock_since: string | null;
 }
 
 export default function BranchDetails() {
@@ -112,6 +114,15 @@ export default function BranchDetails() {
         const branchType = row.original.branch_type;
         const retailThreshold = row.original.retail_low_stock_threshold;
         const wholesaleThreshold = row.original.wholesale_low_stock_threshold;
+        const daysInLowStock = row.original.days_in_low_stock;
+
+        console.log("Row data:", {
+          isLowStock,
+          daysInLowStock,
+          quantity,
+          threshold:
+            branchType === "wholesale" ? wholesaleThreshold : retailThreshold,
+        });
 
         const threshold =
           branchType === "wholesale" ? wholesaleThreshold : retailThreshold;
@@ -125,9 +136,18 @@ export default function BranchDetails() {
         }
 
         return (
-          <div className="flex items-center gap-2">
-            <div className={`font-medium ${textColorClass}`}>{quantity}</div>
-            <div className="text-muted-foreground text-sm">/ {threshold}</div>
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className={`font-medium ${textColorClass}`}>{quantity}</div>
+              <div className="text-muted-foreground text-sm">/ {threshold}</div>
+            </div>
+            {isLowStock && daysInLowStock >= 0 && (
+              <div className="text-xs text-destructive font-medium">
+                {daysInLowStock === 0
+                  ? "Low stock since today"
+                  : `Low stock for ${daysInLowStock} days`}
+              </div>
+            )}
           </div>
         );
       },

@@ -96,6 +96,8 @@ interface BranchStock {
   is_available: boolean;
   branch_type: "retail" | "wholesale";
   is_low_stock: boolean;
+  low_stock_since: string | null;
+  days_in_low_stock: number;
 }
 
 interface BranchPerformanceWithStock extends BranchStock {
@@ -149,15 +151,32 @@ const combinedColumns: ColumnDef<BranchPerformanceWithStock>[] = [
     cell: ({ row }) => {
       const stock = row.getValue("stock") as number;
       const isLowStock = row.original.is_low_stock;
+      const daysInLowStock = row.original.days_in_low_stock;
+
+      let textColorClass = "text-green-600 dark:text-green-400";
+
+      if (!row.original.is_available) {
+        textColorClass = "text-muted-foreground";
+      } else if (isLowStock) {
+        textColorClass = "text-red-600 dark:text-red-400";
+      }
+
       return (
-        <div className="flex items-center gap-2">
-          <span className={cn(isLowStock && "text-destructive")}>
-            {stock} units
-          </span>
-          {isLowStock && (
-            <Badge variant="destructive" className="text-xs">
-              Low
-            </Badge>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <div className={`font-medium ${textColorClass}`}>{stock} units</div>
+            {isLowStock && (
+              <Badge variant="destructive" className="text-xs">
+                Low
+              </Badge>
+            )}
+          </div>
+          {isLowStock && daysInLowStock >= 0 && (
+            <div className="text-xs text-destructive font-medium">
+              {daysInLowStock === 0
+                ? "Low stock since today"
+                : `Low stock for ${daysInLowStock} days`}
+            </div>
           )}
         </div>
       );
