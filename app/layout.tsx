@@ -10,6 +10,7 @@ import { LoadingProvider } from "@/components/providers/loading-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { ViewProvider } from "@/lib/context/ViewContext";
 import { UserProvider } from "@/lib/context/UserContext";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 config.autoAddCss = false;
 
@@ -44,8 +45,10 @@ export default function RootLayout({
             <LoadingProvider>
               <SidebarProvider>
                 <Providers attribute="class" defaultTheme="system" enableSystem>
-                  {children}
-                  <Toaster />
+                  <QueryProvider>
+                    {children}
+                    <Toaster />
+                  </QueryProvider>
                 </Providers>
               </SidebarProvider>
             </LoadingProvider>

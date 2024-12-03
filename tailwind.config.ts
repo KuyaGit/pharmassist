@@ -14,6 +14,10 @@ const config: Config = {
         mono: ["var(--font-geist-mono)"],
       },
       colors: {
+        income: "hsl(var(--color-income))",
+        expenses: "hsl(var(--color-expenses))",
+        profit: "hsl(var(--color-profit))",
+
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         teal: "hsl(var(--teal))",

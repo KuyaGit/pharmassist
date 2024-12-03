@@ -42,3 +42,15 @@ export interface TopProduct {
   value: number;
   quantity: number;
 }
+
+export interface BranchReportWithOfftakes extends BranchReport {
+  offtakes?: Array<{
+    product_id: number;
+    product_name: string;
+    quantity: number;
+    srp: number;
+    cost: number;
+  }>;
+  type?: string;
+  created_at: string;
+}

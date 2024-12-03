@@ -38,6 +38,7 @@ import {
   faMoneyBillTrendUp,
   faScaleBalanced,
   faSackDollar,
+  faLightbulb,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   LineChart,
@@ -50,6 +51,9 @@ import {
   Pie,
   Legend,
   Sector,
+  ComposedChart,
+  ReferenceLine,
+  Bar,
 } from "recharts";
 import { PieSectorDataItem } from "recharts/types/polar/Pie";
 import {
@@ -203,6 +207,31 @@ const getValidGranularities = (range: TimeRange): TimeGranularity[] => {
     default:
       return ["daily"];
   }
+};
+
+const getDateFormat = (granularity: TimeGranularity) => {
+  switch (granularity) {
+    case "daily":
+      return "MMM dd";
+    case "weekly":
+      return "'Week' w, MMM d";
+    case "monthly":
+      return "MMMM yyyy";
+    case "yearly":
+      return "yyyy";
+    default:
+      return "MMM dd";
+  }
+};
+
+// Add this helper function to get week date range
+const getWeekDateRange = (date: Date) => {
+  const weekStart = new Date(date);
+  weekStart.setDate(date.getDate() - date.getDay()); // Get Sunday
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6); // Get Saturday
+
+  return `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`;
 };
 
 export default function BranchDetails() {
@@ -387,7 +416,7 @@ export default function BranchDetails() {
         if (!token) throw new Error("Authentication token not found");
 
         const response = await fetch(
-          `${API_BASE_URL}${API_ENDPOINTS.EXPENSES.LIST}?branch_id=${branchId}&limit=5`,
+          `${API_BASE_URL}${API_ENDPOINTS.EXPENSES.LIST}?branch_id=${branchId}&limit=10`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -441,6 +470,41 @@ export default function BranchDetails() {
   if (branchLoading || isLoading || !branch) {
     return <div>Loading...</div>;
   }
+
+  const config = {
+    income: {
+      label: "Gross Profit",
+      color: "hsl(var(--chart-income))",
+      legendColor: "hsl(var(--chart-income-legend))",
+    },
+    expenses: {
+      label: "Expenses",
+      color: "hsl(var(--chart-expenses))",
+      legendColor: "hsl(var(--chart-expenses-legend))",
+    },
+    profit: {
+      label: "Net Profit",
+      color: "hsl(var(--chart-net-profit))",
+      legendColor: "hsl(var(--chart-net-profit-legend))",
+    },
+  };
+
+  const getPeriodDays = (granularity: TimeGranularity) => {
+    switch (granularity) {
+      case "daily":
+        return 1;
+      case "weekly":
+        return 7;
+      case "monthly":
+        return 30;
+      case "yearly":
+        return 365;
+      default:
+        return 1;
+    }
+  };
+
+  const periodAvg = totalExpenses / chartData.length;
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -678,118 +742,222 @@ export default function BranchDetails() {
           <div className="grid gap-4 md:grid-cols-3">
             <Card className="col-span-2">
               <CardHeader>
-                <div>
-                  <CardTitle>Sales and Profit Trend</CardTitle>
-                  <CardDescription>Performance over time</CardDescription>
-                </div>
+                <CardTitle>Financial Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <ChartContainer config={chartConfig}>
-                  <LineChart
-                    data={chartData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                <ChartContainer config={config} className="h-[400px] w-full">
+                  <ComposedChart
+                    data={chartData.map((data) => ({
+                      month:
+                        granularity === "weekly"
+                          ? getWeekDateRange(new Date(data.date))
+                          : format(
+                              new Date(data.date),
+                              getDateFormat(granularity)
+                            ),
+                      income: data.profit,
+                      expenses: -Math.abs(data.expenses),
+                      profit: data.netProfit,
+                    }))}
+                    margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
+                    width={window.innerWidth * 0.6}
+                    height={400}
+                    stackOffset="sign"
+                    barGap={0}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
-                      dataKey="date"
-                      tickLine={false}
+                      dataKey="month"
                       axisLine={false}
-                      tickMargin={8}
-                      tickFormatter={(value) => {
-                        const date = new Date(value);
-                        return date.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
+                      tickLine={false}
+                      interval="preserveStartEnd"
+                      minTickGap={30}
+                    />
+                    <YAxis
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(value) =>
+                        `₱${Math.abs(value).toLocaleString()}`
+                      }
+                    />
+                    <ReferenceLine y={0} stroke="var(--border)" />
+                    <ChartTooltip
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const colors = {
+                          income: "hsl(var(--chart-income))",
+                          expenses: "hsl(var(--chart-expenses))",
+                          profit: "hsl(var(--chart-net-profit))",
+                        };
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="grid gap-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium">
+                                  {payload[0].payload.month}
+                                </span>
+                              </div>
+                              {payload.map((entry) => (
+                                <div
+                                  key={entry.name}
+                                  className="flex items-center justify-between gap-2 text-foreground"
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <div
+                                      className="h-2 w-2 rounded-full"
+                                      style={{
+                                        background:
+                                          colors[
+                                            entry.dataKey as keyof typeof colors
+                                          ],
+                                      }}
+                                    />
+                                    {entry.name}:
+                                  </span>
+                                  <span className="font-medium">
+                                    ₱
+                                    {(entry.dataKey === "expenses"
+                                      ? Math.abs(Number(entry.value) || 0)
+                                      : Number(entry.value) || 0
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
                       }}
                     />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
+                    <Bar
+                      dataKey="income"
+                      fill="hsl(var(--chart-income))"
+                      radius={[4, 4, 0, 0]}
+                      barSize={40}
+                      stackId="stack"
+                      name="Gross Profit"
                     />
-                    <Line
-                      type="monotone"
-                      dataKey="sales"
-                      stroke="var(--color-sales)"
-                      strokeWidth={2}
-                      dot={false}
-                      name="Sales"
-                    />
-                    <Line
-                      type="monotone"
+                    <Bar
                       dataKey="expenses"
-                      stroke="var(--color-expenses)"
-                      strokeWidth={2}
-                      dot={false}
+                      fill="hsl(var(--chart-expenses))"
+                      radius={[0, 0, 4, 4]}
+                      barSize={40}
+                      stackId="stack"
                       name="Expenses"
                     />
                     <Line
                       type="monotone"
                       dataKey="profit"
-                      stroke="var(--color-profit)"
+                      stroke="hsl(var(--chart-net-profit))"
                       strokeWidth={2}
-                      dot={false}
-                      name="Gross Profit"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="netProfit"
-                      stroke="var(--color-netProfit)"
-                      strokeWidth={2}
-                      dot={false}
+                      dot={{
+                        stroke: "hsl(var(--chart-net-profit))",
+                        strokeWidth: 2,
+                        fill: "white",
+                        r: 4,
+                      }}
                       name="Net Profit"
                     />
-                    <Legend />
-                  </LineChart>
+                    <Legend
+                      verticalAlign="bottom"
+                      height={36}
+                      iconType="circle"
+                      formatter={(value, entry: any) => {
+                        const key = entry.payload
+                          .dataKey as keyof typeof config;
+                        return (
+                          <span style={{ color: "hsl(var(--foreground))" }}>
+                            {value}
+                          </span>
+                        );
+                      }}
+                    />
+                  </ComposedChart>
                 </ChartContainer>
-              </CardContent>
-              <CardFooter>
-                <div className="flex w-full flex-col gap-3">
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faLightbulb}
+                      className="text-yellow-500"
+                    />
+                    <span className="font-semibold">
+                      Insights & Recommendations
+                    </span>
+                  </div>
                   {(() => {
                     const { salesExpenseRatio, profitTrend, highestProfit } =
                       calculateChartInsights(chartData);
+                    const isNegativeProfit = chartData.some(
+                      (d) => d.netProfit < 0
+                    );
+
                     return (
-                      <>
-                        <div className="flex items-center gap-2 font-medium">
-                          <span>
-                            Sales to Expense Ratio:{" "}
-                            {salesExpenseRatio.toFixed(2)}x
+                      <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-2">
+                        {/* Sales to Expense Ratio Insight */}
+                        <p>
+                          <span className="font-medium">
+                            Sales/Expense Ratio:{" "}
                           </span>
-                          {profitTrend !== 0 && (
-                            <span
-                              className={cn(
-                                "ml-4",
-                                profitTrend > 0
-                                  ? "text-success"
-                                  : "text-destructive"
-                              )}
-                            >
-                              ({Math.abs(profitTrend).toFixed(1)}%{" "}
-                              {profitTrend > 0 ? "upward" : "downward"} profit
-                              trend)
+                          {salesExpenseRatio < 1.5 ? (
+                            <span className="text-destructive">
+                              Your sales to expense ratio is{" "}
+                              {salesExpenseRatio.toFixed(2)}. Consider reducing
+                              operational costs or increasing sales volume.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Healthy sales to expense ratio of{" "}
+                              {salesExpenseRatio.toFixed(2)}.
                             </span>
                           )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          <p>
-                            Best performing day:{" "}
-                            {highestProfit?.date
-                              ? format(new Date(highestProfit.date), "MMM d")
-                              : "(No date)"}{" "}
-                            with ₱{highestProfit?.netProfit.toLocaleString()}{" "}
-                            net profit
+                        </p>
+
+                        {/* Profit Trend Insight */}
+                        <p>
+                          <span className="font-medium">Profit Trend: </span>
+                          {profitTrend < 0 ? (
+                            <span className="text-destructive">
+                              Declining profit trend ({profitTrend.toFixed(1)}
+                              %). Review pricing strategy and cost management.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Positive profit growth of {profitTrend.toFixed(1)}
+                              %.
+                            </span>
+                          )}
+                        </p>
+
+                        {/* Negative Profit Warning */}
+                        {isNegativeProfit && (
+                          <p className="text-destructive font-medium">
+                            ⚠️ Warning: Negative profit detected in some
+                            periods. Immediate action recommended:
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Review and optimize operational expenses</li>
+                              <li>Analyze pricing strategy</li>
+                              <li>Consider inventory management efficiency</li>
+                            </ul>
                           </p>
-                          <p>
-                            Revenue covers expenses{" "}
-                            {salesExpenseRatio.toFixed(1)} times on average
+                        )}
+
+                        {/* Best Performance */}
+                        {highestProfit && (
+                          <p className="text-muted-foreground">
+                            <span className="font-medium">
+                              Best Performance:{" "}
+                            </span>
+                            ₱{highestProfit.netProfit.toLocaleString()} on{" "}
+                            {format(
+                              new Date(highestProfit.date),
+                              "MMM d, yyyy"
+                            )}
                           </p>
-                        </div>
-                      </>
+                        )}
+                      </div>
                     );
                   })()}
                 </div>
-              </CardFooter>
+              </CardContent>
             </Card>
 
             <Card className="col-span-2 flex flex-col md:col-span-1">
@@ -833,16 +1001,18 @@ export default function BranchDetails() {
           <div className="grid gap-4 md:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>{getMetricTitle(timeRange)} Expenses</CardTitle>
+                <CardTitle>
+                  {getMetricTitle(timeRange)} Expense Analysis
+                </CardTitle>
                 <CardDescription>
                   {getTimeRangeDescription(timeRange)}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={expensesChartConfig}>
-                  <LineChart
+                  <ComposedChart
                     data={chartData}
-                    margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                    margin={{ top: 20, right: 10, left: 10, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" vertical={false} />
                     <XAxis
@@ -852,81 +1022,190 @@ export default function BranchDetails() {
                       tickMargin={8}
                       tickFormatter={(value) => {
                         const date = new Date(value);
-                        return date.toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        });
+                        return granularity === "weekly"
+                          ? getWeekDateRange(new Date(value))
+                          : format(date, getDateFormat(granularity));
                       }}
                     />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      tickFormatter={(value) => `₱${value.toLocaleString()}`}
+                    />
                     <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
+                      content={({ active, payload }) => {
+                        if (!active || !payload?.length) return null;
+                        const date = new Date(payload[0].payload.date);
+                        const averageExpense = periodAvg;
+                        const highestExpense = Math.max(
+                          ...chartData.map((d) => d.expenses)
+                        );
+                        const expenseVariance =
+                          (highestExpense / averageExpense - 1) * 100;
+                        const hasHighVariance = expenseVariance > 25; // 25% threshold
+
+                        return (
+                          <div className="rounded-lg border bg-background p-2 shadow-sm">
+                            <div className="grid gap-2">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-medium">
+                                  {granularity === "weekly"
+                                    ? getWeekDateRange(date)
+                                    : format(date, getDateFormat(granularity))}
+                                </span>
+                              </div>
+                              <div className="grid gap-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    Expenses:
+                                  </span>
+                                  <span className="font-medium">
+                                    ₱
+                                    {(
+                                      payload?.[0]?.value ?? 0
+                                    ).toLocaleString()}
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-sm text-muted-foreground">
+                                    vs Average:
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      "font-medium",
+                                      Number(payload?.[0]?.value ?? 0) >
+                                        periodAvg
+                                        ? "text-destructive"
+                                        : "text-green-600 dark:text-green-400"
+                                    )}
+                                  >
+                                    {(
+                                      (Number(payload?.[0]?.value ?? 0) /
+                                        periodAvg -
+                                        1) *
+                                      100
+                                    ).toFixed(1)}
+                                    %
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }}
                     />
-                    <Line
-                      type="monotone"
+                    <Bar
                       dataKey="expenses"
-                      stroke={expensesChartConfig.expenses.color}
-                      strokeWidth={2}
-                      dot={false}
-                      name="Total Expenses"
+                      fill="hsl(var(--destructive))"
+                      radius={[4, 4, 0, 0]}
+                      name="Expenses"
                     />
-                  </LineChart>
+                    <ReferenceLine
+                      y={periodAvg}
+                      stroke="hsl(var(--warning))"
+                      strokeDasharray="3 3"
+                      label={{
+                        value: "Period Average",
+                        position: "right",
+                        fill: "hsl(var(--warning))",
+                      }}
+                    />
+                  </ComposedChart>
                 </ChartContainer>
-              </CardContent>
-              <CardFooter>
-                <div className="flex w-full flex-col gap-3">
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faLightbulb}
+                      className="text-yellow-500"
+                    />
+                    <span className="font-semibold">Expense Insights</span>
+                  </div>
                   {(() => {
-                    const dailyAvg = totalExpenses / chartData.length;
-                    const expensesData = chartData.map((d) => ({
-                      date: d.date,
-                      amount: d.expenses,
-                    }));
-                    const sortedExpenses = [...expensesData].sort(
-                      (a, b) => b.amount - a.amount
+                    const averageExpense = periodAvg;
+                    const highestExpense = Math.max(
+                      ...chartData.map((d) => d.expenses)
                     );
+                    const expenseVariance =
+                      (highestExpense / averageExpense - 1) * 100;
+                    const hasHighVariance = expenseVariance > 25; // 25% threshold
 
                     return (
-                      <>
-                        <div className="flex items-center gap-2 font-medium">
-                          <span>
-                            Daily average: ₱
-                            {dailyAvg.toLocaleString(undefined, {
-                              maximumFractionDigits: 2,
-                            })}
+                      <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-2">
+                        {/* Average Expense Analysis */}
+                        <p>
+                          <span className="font-medium">Period Average: </span>
+                          {averageExpense >
+                          (totalExpenses / chartData.length) * 1.2 ? (
+                            <span className="text-destructive">
+                              Expenses are trending higher than usual. Consider
+                              reviewing recurring costs.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Expenses are within normal range.
+                            </span>
+                          )}
+                        </p>
+
+                        {/* Expense Variance Warning */}
+                        {hasHighVariance && (
+                          <p className="text-destructive">
+                            <span className="font-medium">
+                              ⚠️ High Expense Variance:{" "}
+                            </span>
+                            Peak expenses are {expenseVariance.toFixed(1)}%
+                            above average. Recommendations:
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Review unusual spikes in spending</li>
+                              <li>
+                                Consider expense scheduling to avoid peaks
+                              </li>
+                              <li>Evaluate bulk purchase opportunities</li>
+                            </ul>
+                          </p>
+                        )}
+
+                        {/* Expense Pattern */}
+                        <p className="text-muted-foreground">
+                          <span className="font-medium">
+                            Highest Expense Period:{" "}
                           </span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          <p>
-                            Highest expense: ₱
-                            {sortedExpenses[0]?.amount.toLocaleString()}{" "}
-                            {sortedExpenses[0]?.date
-                              ? `(${format(
-                                  new Date(sortedExpenses[0].date),
-                                  "MMM d"
-                                )})`
-                              : "(No date)"}
-                          </p>
-                          <p>
-                            Lowest expense: ₱
-                            {sortedExpenses[
-                              sortedExpenses.length - 1
-                            ]?.amount.toLocaleString()}{" "}
-                            {sortedExpenses[sortedExpenses.length - 1]?.date
-                              ? `(${format(
-                                  new Date(
-                                    sortedExpenses[
-                                      sortedExpenses.length - 1
-                                    ].date
-                                  ),
-                                  "MMM d"
-                                )})`
-                              : "(No date)"}
-                          </p>
-                        </div>
-                      </>
+                          ₱{highestExpense.toLocaleString()} (
+                          {format(
+                            new Date(
+                              chartData.find(
+                                (d) => d.expenses === highestExpense
+                              )?.date || ""
+                            ),
+                            granularity === "monthly"
+                              ? "MMMM yyyy"
+                              : "MMM d, yyyy"
+                          )}
+                          )
+                        </p>
+                      </div>
                     );
                   })()}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <div className="grid w-full grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Period Average</p>
+                    <p className="text-2xl font-bold">
+                      ₱{periodAvg.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Highest Expense</p>
+                    <p className="text-2xl font-bold">
+                      ₱
+                      {Math.max(
+                        ...chartData.map((d) => d.expenses)
+                      ).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
               </CardFooter>
             </Card>
@@ -935,7 +1214,7 @@ export default function BranchDetails() {
               <CardHeader>
                 <CardTitle>Recent Expenses</CardTitle>
                 <CardDescription>
-                  Latest 5 expenses for this branch
+                  Latest 10 expenses for this branch
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-1">

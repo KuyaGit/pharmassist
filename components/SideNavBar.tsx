@@ -37,7 +37,9 @@ export function SideNavBar() {
   const { branchType, setBranchType } = useBranchTypeStore();
 
   const isBranchOperations =
-    pathname.startsWith("/branches") || pathname.startsWith("/reports");
+    pathname.startsWith("/branches") ||
+    pathname.startsWith("/reports") ||
+    (pathname.startsWith("/products") && pathname.includes("/analytics"));
 
   if (!isInitialized) {
     return null;

@@ -67,6 +67,12 @@
       Roboto, "Helvetica Neue", Arial, sans-serif;
     --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
       Consolas, "Liberation Mono", "Courier New", monospace;
+    --chart-income: 174, 77%, 80%;
+    --chart-income-legend: 142, 76%, 46%;
+    --chart-expenses: 350, 100%, 80%;
+    --chart-expenses-legend: 0, 84%, 70%;
+    --chart-net-profit: 214, 84%, 56%;
+    --chart-net-profit-legend: 221, 83%, 63%;
 
     --background: 0 0% 100%;
     --teal: 183 100% 96%;
@@ -111,6 +117,13 @@
   }
 
   .dark {
+    --chart-income: 143, 64%, 24%;
+    --chart-expenses: 0, 63%, 31%;
+    --chart-net-profit: 217, 91%, 60%;
+    --chart-income-legend: 143, 64%, 34%;
+    --chart-expenses-legend: 0, 63%, 41%;
+    --chart-net-profit-legend: 217, 91%, 70%;
+
     --gradient: #00c9ff;
 
     --background: 205 65% 10%;

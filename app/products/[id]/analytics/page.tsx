@@ -27,6 +27,8 @@ import {
   faChartBar,
   faExclamationTriangle,
   faMoneyBill,
+  faBoxes,
+  faLightbulb,
 } from "@fortawesome/free-solid-svg-icons";
 import {
   Breadcrumb,
@@ -76,7 +78,7 @@ import { Product } from "@/types/products";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useProductAnalytics } from "@/hooks/useProductAnalytics";
 import { updateProduct } from "@/lib/api-utils";
-import { cn } from "@/lib/utils";
+import { cn, getTimeRangeDescription } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -88,6 +90,7 @@ import {
 import { DataTable } from "@/components/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
+import { useBranchTypeStore } from "@/lib/store/branch-type-store";
 
 interface BranchStock {
   id: number;
@@ -113,6 +116,12 @@ interface EditProductForm {
   is_wholesale_available: boolean;
   retail_low_stock_threshold: number;
   wholesale_low_stock_threshold: number;
+}
+
+interface BranchPerformanceData {
+  branch_name: string;
+  quantity: number;
+  revenue: number;
 }
 
 const combinedColumns: ColumnDef<BranchPerformanceWithStock>[] = [
@@ -216,10 +225,10 @@ const combinedColumns: ColumnDef<BranchPerformanceWithStock>[] = [
     accessorKey: "is_available",
     enableSorting: false,
     header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" align="left" />
+      <DataTableColumnHeader column={column} title="Status" align="right" />
     ),
     cell: ({ row }) => (
-      <div>
+      <div className="text-right">
         <Badge variant={row.getValue("is_available") ? "success" : "secondary"}>
           {row.getValue("is_available") ? "Available" : "Unavailable"}
         </Badge>
@@ -228,9 +237,53 @@ const combinedColumns: ColumnDef<BranchPerformanceWithStock>[] = [
   },
 ];
 
+const calculateGrowthRate = (
+  currentData: number,
+  timeRange: TimeRange,
+  productData: any
+) => {
+  if (!currentData) return "0.0";
+
+  const previousData = productData?.previous_sales?.quantity ?? 0;
+  if (previousData === 0) return "0.0";
+
+  const growthRate = ((currentData - previousData) / previousData) * 100;
+  return growthRate.toFixed(1);
+};
+
+const calculateTurnoverRate = (
+  currentStock: number,
+  totalSold: number,
+  timeRange: TimeRange
+) => {
+  if (!currentStock) return "0.0";
+
+  let annualizationFactor: number;
+  switch (timeRange) {
+    case "7d":
+      annualizationFactor = 365 / 7;
+      break;
+    case "30d":
+      annualizationFactor = 365 / 30;
+      break;
+    case "90d":
+      annualizationFactor = 365 / 90;
+      break;
+    case "1y":
+      annualizationFactor = 1;
+      break;
+    default:
+      annualizationFactor = 365 / 30;
+  }
+
+  const annualizedSales = totalSold * annualizationFactor;
+  return (annualizedSales / currentStock).toFixed(1);
+};
+
 export default function ProductDetails() {
   const params = useParams();
   const productId = parseInt(params.id as string);
+  const { branchType } = useBranchTypeStore();
   const [timeRange, setTimeRange] = useState<TimeRange>("30d");
   const [showEditDialog, setShowEditDialog] = useState(false);
   const router = useRouter();
@@ -273,7 +326,7 @@ export default function ProductDetails() {
   }, [productId]);
 
   const { productData, priceHistory, branchPerformance, refetch } =
-    useProductAnalytics(productId, timeRange);
+    useProductAnalytics(productId, timeRange, branchType);
 
   const chartConfig = {
     sales: {
@@ -355,6 +408,22 @@ export default function ProductDetails() {
     });
   };
 
+  // Modify the filtering to combine branch performance and stock data
+  const filteredBranchPerformance: BranchPerformanceWithStock[] =
+    productData?.stock_analytics?.branch_stocks
+      ?.filter((stock: BranchStock) => stock.branch_type === branchType)
+      ?.map((stock: BranchStock) => {
+        const performance = branchPerformance?.find(
+          (branch: BranchPerformanceData) => branch.branch_name === stock.name
+        );
+
+        return {
+          ...stock,
+          quantity: performance?.quantity ?? 0,
+          revenue: performance?.revenue ?? 0,
+        };
+      }) ?? [];
+
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
       <SideNavBar />
@@ -431,7 +500,7 @@ export default function ProductDetails() {
                 <div className="text-2xl font-bold">
                   {productData?.total_sales?.quantity ?? 0} units
                 </div>
-                {product?.is_retail_available ? (
+                {branchType === "retail" ? (
                   <p className="text-xs text-muted-foreground">
                     ₱{productData?.total_sales?.revenue?.toLocaleString() ?? 0}{" "}
                     revenue
@@ -493,26 +562,56 @@ export default function ProductDetails() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Profit Margin
-                </CardTitle>
-                <FontAwesomeIcon
-                  icon={faChartLine}
-                  size="2x"
-                  className="text-icon"
-                />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(productData?.price_analytics?.avg_margin ?? 0).toFixed(2)}%
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Average profit margin
-                </p>
-              </CardContent>
-            </Card>
+            {branchType === "retail" ? (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Profit Margin
+                  </CardTitle>
+                  <FontAwesomeIcon
+                    icon={faChartLine}
+                    size="2x"
+                    className="text-icon"
+                  />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {(productData?.price_analytics?.avg_margin ?? 0).toFixed(2)}
+                    %
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Average retail profit margin
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Stock Turnover Rate
+                  </CardTitle>
+                  <FontAwesomeIcon
+                    icon={faChartLine}
+                    size="2x"
+                    className="text-icon"
+                  />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {calculateTurnoverRate(
+                      productData?.stock_analytics?.total_stock ?? 0,
+                      productData?.total_sales?.quantity ?? 0,
+                      timeRange
+                    )}
+                    x
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Annualized turnover rate for{" "}
+                    {getTimeRangeDescription(timeRange)}
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -764,6 +863,117 @@ export default function ProductDetails() {
                     <Legend />
                   </LineChart>
                 </ChartContainer>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faLightbulb}
+                      className="text-yellow-500"
+                    />
+                    <span className="font-semibold">
+                      Price History Insights
+                    </span>
+                  </div>
+                  {(() => {
+                    const latestPrice =
+                      priceHistory[priceHistory.length - 1]?.srp ?? 0;
+
+                    // Get price from 6 months ago as baseline
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+                    const baselinePrice =
+                      priceHistory.reduce(
+                        (
+                          baseline: { date: string; srp: number } | null,
+                          record: { date: string; srp: number }
+                        ) => {
+                          const recordDate = new Date(record.date);
+                          // Find the closest price to 6 months ago
+                          if (
+                            recordDate <= sixMonthsAgo &&
+                            (!baseline || recordDate > new Date(baseline.date))
+                          ) {
+                            return record;
+                          }
+                          return baseline;
+                        },
+                        null
+                      )?.srp ??
+                      priceHistory[0]?.srp ??
+                      latestPrice;
+
+                    const priceChangePercent =
+                      ((latestPrice - baselinePrice) / baselinePrice) * 100;
+                    const marginTrend =
+                      productData?.price_analytics?.avg_margin ?? 0;
+
+                    return (
+                      <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-2">
+                        <p>
+                          <span className="font-medium">
+                            6-Month Price Trend:{" "}
+                          </span>
+                          {Math.abs(priceChangePercent) > 15 ? ( // Reduced threshold for 6-month period
+                            <span className="text-destructive">
+                              Significant price{" "}
+                              {priceChangePercent > 0 ? "increase" : "decrease"}{" "}
+                              of {Math.abs(priceChangePercent).toFixed(1)}% in
+                              the past 6 months.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Stable pricing with{" "}
+                              {priceChangePercent > 0
+                                ? "slight increase"
+                                : "slight decrease"}{" "}
+                              of {Math.abs(priceChangePercent).toFixed(1)}% in
+                              the past 6 months.
+                            </span>
+                          )}
+                        </p>
+
+                        <p>
+                          <span className="font-medium">Margin Analysis: </span>
+                          {marginTrend < 15 ? (
+                            <span className="text-destructive">
+                              Low profit margin of {marginTrend.toFixed(1)}%.
+                              Consider cost optimization.
+                            </span>
+                          ) : marginTrend > 40 ? (
+                            <span className="text-yellow-600 dark:text-yellow-400">
+                              High margin of {marginTrend.toFixed(1)}%. Monitor
+                              market competitiveness.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Healthy margin of {marginTrend.toFixed(1)}%.
+                            </span>
+                          )}
+                        </p>
+
+                        {(Math.abs(priceChangePercent) > 20 ||
+                          marginTrend < 15 ||
+                          marginTrend > 40) && (
+                          <div className="text-destructive">
+                            <span className="font-medium">
+                              ⚠️ Recommendations:
+                            </span>
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Review competitor pricing strategies</li>
+                              <li>
+                                Analyze sales volume impact of price changes
+                              </li>
+                              <li>
+                                Consider bulk purchase opportunities for better
+                                margins
+                              </li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </CardContent>
               <CardFooter>
                 <div className="text-sm text-muted-foreground">
@@ -788,28 +998,119 @@ export default function ProductDetails() {
               <CardContent>
                 <ChartContainer config={chartConfig}>
                   <BarChart
-                    data={branchPerformance}
+                    data={filteredBranchPerformance}
                     layout="vertical"
-                    margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                    margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
+                    barSize={20}
                   >
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" />
-                    <YAxis dataKey="branch_name" type="category" />
-                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <XAxis
+                      type="number"
+                      tickFormatter={(value) => value.toLocaleString()}
+                    />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      width={50}
+                      tickFormatter={(value) =>
+                        value.length > 15
+                          ? `${value.substring(0, 15)}...`
+                          : value
+                      }
+                    />
+                    <ChartTooltip
+                      cursor={{ fill: "var(--muted)", opacity: 0.2 }}
+                      content={<ChartTooltipContent />}
+                    />
                     <Bar
                       dataKey="quantity"
                       fill={chartConfig.sales.color}
                       name="Units Sold"
+                      radius={[0, 4, 4, 0]}
                     />
                   </BarChart>
                 </ChartContainer>
+                <div className="mt-4 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon
+                      icon={faLightbulb}
+                      className="text-yellow-500"
+                    />
+                    <span className="font-semibold">Distribution Insights</span>
+                  </div>
+                  {(() => {
+                    const totalBranches = filteredBranchPerformance.length;
+                    const totalSales = filteredBranchPerformance.reduce(
+                      (sum, b) => sum + b.quantity,
+                      0
+                    );
+                    const avgSales = totalSales / totalBranches;
+                    const topPerformer = filteredBranchPerformance[0];
+                    const salesSpread = topPerformer
+                      ? topPerformer.quantity / avgSales
+                      : 0;
+
+                    return (
+                      <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-2">
+                        <p>
+                          <span className="font-medium">
+                            Distribution Coverage:{" "}
+                          </span>
+                          {totalBranches < 3 ? (
+                            <span className="text-yellow-600 dark:text-yellow-400">
+                              Limited availability in only {totalBranches}{" "}
+                              branches. Consider expanding distribution.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Good market coverage across {totalBranches}{" "}
+                              branches.
+                            </span>
+                          )}
+                        </p>
+
+                        <p>
+                          <span className="font-medium">
+                            Sales Distribution:{" "}
+                          </span>
+                          {salesSpread > 3 ? (
+                            <span className="text-destructive">
+                              High sales variance with top branch exceeding
+                              average by {((salesSpread - 1) * 100).toFixed(1)}
+                              %.
+                            </span>
+                          ) : (
+                            <span className="text-green-600 dark:text-green-400">
+                              Balanced sales distribution across branches.
+                            </span>
+                          )}
+                        </p>
+
+                        {(totalBranches < 3 || salesSpread > 3) && (
+                          <div className="text-destructive">
+                            <span className="font-medium">
+                              ⚠️ Recommendations:
+                            </span>
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Evaluate stock allocation strategy</li>
+                              <li>Consider expanding to new branches</li>
+                              <li>Analyze successful branch practices</li>
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </CardContent>
               <CardFooter>
                 <div className="text-sm text-muted-foreground">
                   <p>
-                    Top performing branch: {branchPerformance[0]?.branch_name}
+                    Top performing branch: {filteredBranchPerformance[0]?.name}
                   </p>
-                  <p>Total branches selling: {branchPerformance.length}</p>
+                  <p>
+                    Total branches selling: {filteredBranchPerformance.length}
+                  </p>
                 </div>
               </CardFooter>
             </Card>
@@ -823,20 +1124,7 @@ export default function ProductDetails() {
             <CardContent>
               <DataTable
                 columns={combinedColumns}
-                data={
-                  productData?.stock_analytics?.branch_stocks.map(
-                    (branchStock: BranchStock) => {
-                      const performance = branchPerformance?.find(
-                        (bp) => bp.branch_name === branchStock.name
-                      );
-                      return {
-                        ...branchStock,
-                        quantity: performance?.quantity ?? 0,
-                        revenue: performance?.revenue ?? 0,
-                      };
-                    }
-                  ) || []
-                }
+                data={filteredBranchPerformance}
                 enableSorting
                 enableFiltering
                 enableColumnVisibility
