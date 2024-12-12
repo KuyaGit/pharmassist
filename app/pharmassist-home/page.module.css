@@ -1,0 +1,33 @@
+.pharmassistHome {
+  color: #ffffff;
+  background: #000000;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.pharmassistHome :global(body) {
+  color: #ffffff;
+  background: #000000;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+}
+
+.pharmassistHome :global(::-webkit-scrollbar) {
+  display: none;
+}
+
+.pharmassistHome :global(*) {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.pharmassistHome :global(html) {
+  scroll-behavior: smooth;
+}
+
+.hoverShadowEffect {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hoverShadowEffect:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}

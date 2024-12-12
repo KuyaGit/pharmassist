@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { ImageCarousel } from "@/components/ImageCarousel";
+import { ImageCarousel } from "@/components/PomonaImageCarousel";
 import { Download } from "lucide-react";
 
 export default function DownloadPage() {

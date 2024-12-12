@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Icons } from "@/components/icons";
 import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
 import { toast } from "sonner";
-import { ImageCarousel } from "@/components/ImageCarousel";
+import { ImageCarousel } from "@/components/PomonaImageCarousel";
 
 export default function PharmAssist() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
