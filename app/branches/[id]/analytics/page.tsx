@@ -1172,16 +1172,27 @@ export default function BranchDetails() {
                             Highest Expense Period:{" "}
                           </span>
                           ₱{highestExpense.toLocaleString()} (
-                          {format(
-                            new Date(
-                              chartData.find(
-                                (d) => d.expenses === highestExpense
-                              )?.date || ""
-                            ),
-                            granularity === "monthly"
-                              ? "MMMM yyyy"
-                              : "MMM d, yyyy"
-                          )}
+                          {(() => {
+                            const expenseData = chartData.find(
+                              (d) => d.expenses === highestExpense
+                            );
+
+                            if (!expenseData?.date) {
+                              return "No date available";
+                            }
+
+                            try {
+                              return format(
+                                new Date(expenseData.date),
+                                granularity === "monthly"
+                                  ? "MMMM yyyy"
+                                  : "MMM d, yyyy"
+                              );
+                            } catch (error) {
+                              console.error("Date formatting error:", error);
+                              return "Invalid date";
+                            }
+                          })()}
                           )
                         </p>
                       </div>

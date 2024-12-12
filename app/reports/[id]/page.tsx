@@ -92,6 +92,11 @@ export default function ReportPage({ params }: { params: { id: string } }) {
           <TopBar />
           <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
             <div className="flex items-center justify-between">
+              <h1 className="text-3xl font-bold tracking-tight">
+                Inventory Report #{params.id}
+              </h1>
+            </div>
+            <div className="flex items-center justify-between">
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>
@@ -138,6 +143,17 @@ function ReportContent({
   report: any;
   params: { id: string };
 }) {
+  const formatPeriodDate = (date: Date) => {
+    const dayAndTime = format(date, "EEE, MMM d");
+    const time = format(date, "h:mm a");
+    return (
+      <div className="flex flex-col">
+        <span className="font-medium">{dayAndTime}</span>
+        <span className="text-sm text-muted-foreground">{time}</span>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Regular view */}
@@ -163,11 +179,13 @@ function ReportContent({
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Period</p>
-                <p className="font-medium">
-                  {format(new Date(report.start_date), "MMM d")} -{" "}
-                  {format(new Date(report.end_date), "MMM d, yyyy")}
-                </p>
+                <div className="flex items-center gap-2">
+                  {formatPeriodDate(new Date(report.start_date))}
+                  <span className="text-muted-foreground">to</span>
+                  {formatPeriodDate(new Date(report.end_date))}
+                </div>
               </div>
+
               <div>
                 <p className="text-sm text-muted-foreground">Items Count</p>
                 <p className="font-medium">{report.items_count}</p>
@@ -205,8 +223,9 @@ function ReportContent({
             <p>Branch: {report.branch_name}</p>
             <p>Report Date: {format(new Date(report.created_at), "PPP")}</p>
             <p>
-              Period: {format(new Date(report.start_date), "MMM d")} -{" "}
-              {format(new Date(report.end_date), "MMM d, yyyy")}
+              Period:{" "}
+              {format(new Date(report.start_date), "EEE, MMM d, h:mm a")} to{" "}
+              {format(new Date(report.end_date), "EEE, MMM d, h:mm a, yyyy")}
             </p>
           </div>
         </div>
