@@ -70,6 +70,18 @@ export default function Footer() {
           </p>
           <div className="flex space-x-6 mt-4 sm:mt-0">
             <Link
+              href="/pharmassist"
+              className="text-sm hover:text-white transition-colors duration-200"
+            >
+              Login
+            </Link>
+            <Link
+              href="/"
+              className="text-sm hover:text-white transition-colors duration-200"
+            >
+              Pomona Home
+            </Link>
+            <Link
               href="/privacy"
               className="text-sm hover:text-white transition-colors duration-200"
             >
@@ -93,6 +105,8 @@ const quickLinks = [
   { label: "Features", href: "/#features" },
   { label: "About", href: "/#about" },
   { label: "Contact", href: "/#contact" },
+  { label: "Login", href: "/pharmassist" },
+  { label: "Pomona Home", href: "/" },
 ];
 
 const features = [

@@ -51,6 +51,14 @@ const Footer = () => {
                   Contact
                 </button>
               </li>
+              <li>
+                <a
+                  href="/pharmassist"
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  Login
+                </a>
+              </li>
             </ul>
           </div>
 
@@ -140,6 +148,12 @@ const Footer = () => {
               © 2024 Pomona Pharmaceutical. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
+              <a
+                href="/pharmassist-home"
+                className="text-sm text-gray-400 hover:text-white transition-colors"
+              >
+                PharmAssist Home
+              </a>
               <a
                 href="#"
                 className="text-sm text-gray-400 hover:text-white transition-colors"
