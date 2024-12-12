@@ -482,6 +482,256 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
 
+                <Card className="col-span-3">
+                  <CardHeader>
+                    <CardTitle>Top Performing Products</CardTitle>
+                    <CardDescription>
+                      Best selling products by revenue
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {analytics?.top_products.map((product) => (
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between space-x-4"
+                        >
+                          <div className="flex flex-col space-y-1">
+                            <span className="font-medium">{product.name}</span>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm text-muted-foreground">
+                                Sales: {product.total_sales.toLocaleString()}
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                •
+                              </span>
+                              <span className="text-sm text-muted-foreground">
+                                Revenue: ₱{product.revenue.toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                          <Badge
+                            variant={
+                              product.profit_margin >= 20
+                                ? "default"
+                                : "secondary"
+                            }
+                          >
+                            {product.profit_margin.toFixed(1)}% margin
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="col-span-7">
+                  <CardHeader>
+                    <CardTitle>Branch Performance Comparison</CardTitle>
+                    <CardDescription>
+                      {getTimeRangeDescription(timeRange)}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={config}
+                      className="h-[400px] w-full"
+                    >
+                      <BarChart
+                        data={
+                          analytics?.branch_performance.map((branch) => ({
+                            name: branch.branch_name,
+                            revenue: branch.revenue,
+                            profit: branch.profit,
+                            expenses: branch.total_expenses,
+                          })) ?? []
+                        }
+                        margin={{ top: 20, right: 10, left: 10, bottom: 60 }}
+                        barGap={8}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis
+                          dataKey="name"
+                          angle={-45}
+                          textAnchor="end"
+                          height={60}
+                          tickMargin={20}
+                        />
+                        <YAxis
+                          tickFormatter={(value) =>
+                            `₱${(value / 1000).toFixed(0)}k`
+                          }
+                        />
+                        <ChartTooltip
+                          content={({ active, payload }) => {
+                            if (!active || !payload?.length) return null;
+                            return (
+                              <div className="rounded-lg border bg-background p-2 shadow-sm">
+                                <div className="grid gap-2">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <span className="font-medium">
+                                      {payload[0].payload.name}
+                                    </span>
+                                  </div>
+                                  <div className="grid gap-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm text-muted-foreground">
+                                        Revenue:
+                                      </span>
+                                      <span className="font-medium">
+                                        ₱
+                                        {Number(
+                                          payload[0].value
+                                        ).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm text-muted-foreground">
+                                        Profit:
+                                      </span>
+                                      <span className="font-medium">
+                                        ₱
+                                        {Number(
+                                          payload[1].value
+                                        ).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="text-sm text-muted-foreground">
+                                        Expenses:
+                                      </span>
+                                      <span className="font-medium">
+                                        ₱
+                                        {Number(
+                                          payload[2].value
+                                        ).toLocaleString()}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }}
+                        />
+                        <Bar
+                          dataKey="revenue"
+                          fill="hsl(var(--chart-income))"
+                          name="Revenue"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="profit"
+                          fill="hsl(var(--chart-net-profit))"
+                          name="Profit"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Bar
+                          dataKey="expenses"
+                          fill="hsl(var(--chart-expenses))"
+                          name="Expenses"
+                          radius={[4, 4, 0, 0]}
+                        />
+                        <Legend
+                          verticalAlign="top"
+                          height={36}
+                          iconType="circle"
+                          formatter={(value) => (
+                            <span style={{ color: "hsl(var(--foreground))" }}>
+                              {value}
+                            </span>
+                          )}
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <FontAwesomeIcon
+                          icon={faLightbulb}
+                          className="text-yellow-500"
+                        />
+                        <span className="font-semibold">Branch Insights</span>
+                      </div>
+                      {(() => {
+                        if (!analytics?.branch_performance.length) return null;
+
+                        const avgRevenue =
+                          analytics.branch_performance.reduce(
+                            (sum, b) => sum + b.revenue,
+                            0
+                          ) / analytics.branch_performance.length;
+
+                        const avgProfit =
+                          analytics.branch_performance.reduce(
+                            (sum, b) => sum + b.profit,
+                            0
+                          ) / analytics.branch_performance.length;
+
+                        const topBranch = [
+                          ...analytics.branch_performance,
+                        ].sort((a, b) => b.profit - a.profit)[0];
+
+                        const bottomBranch = [
+                          ...analytics.branch_performance,
+                        ].sort((a, b) => a.profit - b.profit)[0];
+
+                        const profitSpread = topBranch.profit / avgProfit;
+
+                        return (
+                          <div className="rounded-lg border bg-muted/50 p-3 text-sm space-y-2">
+                            <p>
+                              <span className="font-medium">
+                                Performance Spread:{" "}
+                              </span>
+                              {profitSpread > 2 ? (
+                                <span className="text-destructive">
+                                  High variance in branch performance. Top
+                                  branch exceeds average by{" "}
+                                  {((profitSpread - 1) * 100).toFixed(1)}%.
+                                </span>
+                              ) : (
+                                <span className="text-green-600 dark:text-green-400">
+                                  Balanced performance across branches.
+                                </span>
+                              )}
+                            </p>
+
+                            <p>
+                              <span className="font-medium">
+                                Top Performer:{" "}
+                              </span>
+                              {topBranch.branch_name} (₱
+                              {topBranch.profit.toLocaleString()} profit)
+                            </p>
+
+                            <p>
+                              <span className="font-medium">
+                                Needs Improvement:{" "}
+                              </span>
+                              {bottomBranch.branch_name} (₱
+                              {bottomBranch.profit.toLocaleString()} profit)
+                            </p>
+
+                            {profitSpread > 2 && (
+                              <div className="text-destructive">
+                                <span className="font-medium">
+                                  ⚠️ Recommendations:
+                                </span>
+                                <ul className="list-disc list-inside ml-4 mt-1">
+                                  <li>Analyze top branch practices</li>
+                                  <li>
+                                    Review underperforming branch operations
+                                  </li>
+                                  <li>Consider resource reallocation</li>
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Rest of the components... */}
                 {/* You can reference the branch and product analytics pages for additional charts and insights */}
               </div>

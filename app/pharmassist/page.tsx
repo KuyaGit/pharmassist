@@ -38,16 +38,32 @@ export default function PharmAssist() {
         }
       );
 
+      const data = await response.json();
+      console.log("Login response:", data);
+
       if (!response.ok) {
-        throw new Error("Invalid credentials");
+        throw new Error(data.detail || "Invalid credentials");
       }
 
-      const data = await response.json();
-      document.cookie = `token=${data.access_token}; path=/`;
-      toast.success("Logged in successfully");
-      router.push("/dashboard");
+      // Decode the JWT token
+      const tokenPayload = JSON.parse(atob(data.access_token.split(".")[1]));
+      console.log("Token payload:", tokenPayload);
+
+      if (tokenPayload.role?.toLowerCase() === "admin") {
+        document.cookie = `token=${data.access_token}; path=/`;
+        toast.success("Logged in successfully");
+        await router.push("/dashboard");
+      } else {
+        document.cookie =
+          "token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+        toast.info("Please use the mobile app for non-admin access");
+        await router.push("/download");
+      }
     } catch (error) {
-      toast.error("Invalid username or password");
+      console.error("Login error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Authentication failed"
+      );
     } finally {
       setIsLoading(false);
     }
