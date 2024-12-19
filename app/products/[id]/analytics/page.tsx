@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { SideNavBar } from "@/components/SideNavBar";
 import { TopBar } from "@/components/TopBar";
 import { Button } from "@/components/ui/button";
-import { Pencil, ShieldCheck, ShieldX } from "lucide-react";
+import { ArrowLeft, Pencil, ShieldCheck, ShieldX } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -93,6 +93,7 @@ import { useBranchTypeStore } from "@/lib/store/branch-type-store";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { Icons } from "@/components/icons";
 import Image from "next/image";
+import { Branch } from "@/types/branch";
 
 interface BranchStock {
   id: number;
@@ -295,6 +296,7 @@ export default function ProductDetails() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
 
   const fetchProductDetails = async () => {
     try {
@@ -437,6 +439,34 @@ export default function ProductDetails() {
     });
   };
 
+  const fetchBranches = async () => {
+    try {
+      const token = getCookie("token");
+      if (!token) throw new Error("Authentication token not found");
+
+      const response = await fetch(
+        `${API_BASE_URL}${API_ENDPOINTS.BRANCHES.LIST}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch branches");
+      const data = await response.json();
+      setBranches(data);
+    } catch (error) {
+      console.error("Error fetching branches:", error);
+      showToast("Failed to fetch branches", "error");
+    }
+  };
+
+  useEffect(() => {
+    fetchBranches();
+  }, []);
+
   // Modify the filtering to combine branch performance and stock data
   const filteredBranchPerformance: BranchPerformanceWithStock[] =
     productData?.stock_analytics?.branch_stocks
@@ -452,6 +482,16 @@ export default function ProductDetails() {
           revenue: performance?.revenue ?? 0,
         };
       }) ?? [];
+
+  // Calculate the percentage of branches covered
+  const totalAvailableBranches = branches.filter(
+    (branch) => branch.branch_type === branchType && branch.is_active
+  ).length;
+
+  const branchCoveragePercentage =
+    totalAvailableBranches > 0
+      ? (filteredBranchPerformance.length / totalAvailableBranches) * 100
+      : 0;
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -499,6 +539,7 @@ export default function ProductDetails() {
             {/* Right side: Actions */}
             <div className="flex items-center gap-3">
               <Button variant="outline" onClick={() => router.back()}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
               <Button variant="outline" size="sm" onClick={handleEdit}>
@@ -984,20 +1025,42 @@ export default function ProductDetails() {
 
                         <p>
                           <span className="font-medium">Margin Analysis: </span>
-                          {marginTrend < 15 ? (
-                            <span className="text-destructive">
-                              Low profit margin of {marginTrend.toFixed(1)}%.
-                              Consider cost optimization.
-                            </span>
-                          ) : marginTrend > 40 ? (
-                            <span className="text-yellow-600 dark:text-yellow-400">
-                              High margin of {marginTrend.toFixed(1)}%. Monitor
-                              market competitiveness.
-                            </span>
-                          ) : (
-                            <span className="text-green-600 dark:text-green-400">
-                              Healthy margin of {marginTrend.toFixed(1)}%.
-                            </span>
+                          {Math.abs(priceChangePercent) > 20 && (
+                            <div className="text-destructive">
+                              <span className="font-medium">
+                                ⚠️ Price Volatility Action:
+                              </span>
+                              <ul className="list-disc list-inside ml-4 mt-1">
+                                <li>Review competitor pricing strategies</li>
+                                <li>
+                                  Analyze sales volume impact of price changes
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+
+                          {marginTrend < 15 && (
+                            <div className="text-destructive">
+                              <span className="font-medium">
+                                ⚠️ Low Margin Action:
+                              </span>
+                              <ul className="list-disc list-inside ml-4 mt-1">
+                                <li>Consider bulk purchase opportunities</li>
+                                <li>Review and optimize operational costs</li>
+                              </ul>
+                            </div>
+                          )}
+
+                          {marginTrend > 40 && (
+                            <div className="text-yellow-600 dark:text-yellow-400">
+                              <span className="font-medium">
+                                ⚠️ High Margin Alert:
+                              </span>
+                              <ul className="list-disc list-inside ml-4 mt-1">
+                                <li>Monitor market competitiveness</li>
+                                <li>Consider strategic price adjustments</li>
+                              </ul>
+                            </div>
                           )}
                         </p>
 
@@ -1106,15 +1169,20 @@ export default function ProductDetails() {
                           <span className="font-medium">
                             Distribution Coverage:{" "}
                           </span>
-                          {totalBranches < 3 ? (
+                          {branchCoveragePercentage < 50 ? (
                             <span className="text-yellow-600 dark:text-yellow-400">
-                              Limited availability in only {totalBranches}{" "}
-                              branches. Consider expanding distribution.
+                              Limited availability in{" "}
+                              {filteredBranchPerformance.length} out of{" "}
+                              {totalAvailableBranches} {branchType} branches (
+                              {branchCoveragePercentage.toFixed(1)}%). Consider
+                              expanding distribution.
                             </span>
                           ) : (
                             <span className="text-green-600 dark:text-green-400">
-                              Good market coverage across {totalBranches}{" "}
-                              branches.
+                              Good market coverage across{" "}
+                              {filteredBranchPerformance.length} out of{" "}
+                              {totalAvailableBranches} {branchType} branches (
+                              {branchCoveragePercentage.toFixed(1)}%).
                             </span>
                           )}
                         </p>
@@ -1136,14 +1204,25 @@ export default function ProductDetails() {
                           )}
                         </p>
 
-                        {(totalBranches < 3 || salesSpread > 3) && (
+                        {totalBranches < 3 && (
                           <div className="text-destructive">
                             <span className="font-medium">
-                              ⚠️ Recommendations:
+                              ⚠️ Limited Distribution:
+                            </span>
+                            <ul className="list-disc list-inside ml-4 mt-1">
+                              <li>Consider expanding to new branches</li>
+                              <li>Evaluate market potential in other areas</li>
+                            </ul>
+                          </div>
+                        )}
+
+                        {salesSpread > 3 && (
+                          <div className="text-destructive">
+                            <span className="font-medium">
+                              ⚠️ Uneven Sales Distribution:
                             </span>
                             <ul className="list-disc list-inside ml-4 mt-1">
                               <li>Evaluate stock allocation strategy</li>
-                              <li>Consider expanding to new branches</li>
                               <li>Analyze successful branch practices</li>
                             </ul>
                           </div>
