@@ -38,7 +38,8 @@ const sidebarNavItems = [
   },
 ];
 
-const profileFormSchema = z
+// For users with no profile (initial setup)
+const initialSetupFormSchema = z
   .object({
     first_name: z.string().min(2, {
       message: "First name must be at least 2 characters.",
@@ -51,37 +52,49 @@ const profileFormSchema = z
     }),
     phone_number: z.string().optional(),
     license_number: z.string().optional(),
-    current_password: z.string().min(8).optional(),
-    new_username: z.string().min(3).optional(),
-    new_password: z.string().min(8).optional(),
-    confirm_password: z.string().optional(),
+    current_password: z.string().min(8),
+    new_username: z.string().min(3),
+    new_password: z.string().min(8),
+    confirm_password: z.string(),
   })
-  .refine(
-    (data) => {
-      if (!data.new_password) return true;
-      return data.new_password === data.confirm_password;
-    },
-    {
-      message: "Passwords don't match",
-      path: ["confirm_password"],
-    }
-  );
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  });
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
-
-const credentialsFormSchema = z.object({
-  current_password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+// For users with existing profile
+const profileUpdateFormSchema = z.object({
+  first_name: z.string().min(2, {
+    message: "First name must be at least 2 characters.",
   }),
-  new_username: z.string().min(3, {
-    message: "Username must be at least 3 characters.",
+  last_name: z.string().min(2, {
+    message: "Last name must be at least 2 characters.",
   }),
-  new_password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
+  email: z.string().email({
+    message: "Please enter a valid email address.",
   }),
+  phone_number: z.string().optional(),
+  license_number: z.string().optional(),
 });
 
-type CredentialsFormValues = z.infer<typeof credentialsFormSchema>;
+type CredentialsFormValues = {
+  current_password: string;
+  new_username: string;
+  new_password: string;
+  confirm_password: string;
+};
+
+const credentialsFormSchema = z
+  .object({
+    current_password: z.string().min(8),
+    new_username: z.string().min(3),
+    new_password: z.string().min(8),
+    confirm_password: z.string(),
+  })
+  .refine((data) => data.new_password === data.confirm_password, {
+    message: "Passwords don't match",
+    path: ["confirm_password"],
+  });
 
 export default function Settings() {
   const { refreshUser } = useUser();
@@ -89,19 +102,30 @@ export default function Settings() {
   const [hasProfile, setHasProfile] = useState<boolean | null>(null);
   const [userData, setUserData] = useState<any>(null);
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+  const form = useForm<
+    typeof profileUpdateFormSchema._type | typeof initialSetupFormSchema._type
+  >({
+    resolver: zodResolver(
+      hasProfile ? profileUpdateFormSchema : initialSetupFormSchema
+    ),
     defaultValues: {
       first_name: "",
       last_name: "",
       email: "",
       phone_number: "",
       license_number: "",
-      current_password: "",
-      new_username: "",
-      new_password: "",
+      ...(hasProfile
+        ? {}
+        : {
+            current_password: "",
+            new_username: "",
+            new_password: "",
+            confirm_password: "",
+          }),
     },
   });
+
+  const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
 
   const credentialsForm = useForm<CredentialsFormValues>({
     resolver: zodResolver(credentialsFormSchema),
@@ -109,10 +133,9 @@ export default function Settings() {
       current_password: "",
       new_username: "",
       new_password: "",
+      confirm_password: "",
     },
   });
-
-  const [isCredentialsLoading, setIsCredentialsLoading] = useState(false);
 
   useEffect(() => {
     const checkAndFetchProfile = async () => {
@@ -176,7 +199,7 @@ export default function Settings() {
     checkAndFetchProfile();
   }, [form]);
 
-  async function onSubmit(data: ProfileFormValues) {
+  async function onSubmit(data: any) {
     setIsLoading(true);
     try {
       const token = document.cookie
@@ -224,50 +247,73 @@ export default function Settings() {
           throw new Error("Failed to update credentials");
         }
 
+        // Update token with new one from credentials update
         document.cookie = `token=${responseData.access_token}; path=/`;
-      }
 
-      // Continue with profile creation/update
-      const profileResponse = await fetch(
-        `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`,
-        {
-          method: hasProfile ? "PUT" : "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            first_name: data.first_name,
-            last_name: data.last_name,
-            email: data.email,
-            phone_number: data.phone_number,
-            license_number: data.license_number,
-          }),
+        // Continue with profile creation using the new token
+        const profileResponse = await fetch(
+          `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${responseData.access_token}`,
+            },
+            body: JSON.stringify({
+              first_name: data.first_name,
+              last_name: data.last_name,
+              email: data.email,
+              phone_number: data.phone_number || "",
+              license_number: data.license_number || "",
+            }),
+          }
+        );
+
+        const profileData = await profileResponse.json();
+
+        if (!profileResponse.ok) {
+          throw new Error(profileData.detail || "Failed to create profile");
         }
-      );
 
-      if (!profileResponse.ok) {
-        throw new Error(
-          hasProfile ? "Failed to update profile" : "Failed to create profile"
+        toast.success("Profile created and credentials updated successfully");
+        setHasProfile(true);
+        refreshUser();
+      } else {
+        // Profile update only
+        const profileResponse = await fetch(
+          `${API_BASE_URL}${API_ENDPOINTS.AUTH.PROFILE}`,
+          {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              first_name: data.first_name,
+              last_name: data.last_name,
+              email: data.email,
+              phone_number: data.phone_number || "",
+              license_number: data.license_number || "",
+            }),
+          }
         );
-      }
 
-      toast.success(
-        hasProfile
-          ? "Profile updated successfully"
-          : "Profile created successfully"
-      );
-      setHasProfile(true);
-      refreshUser();
+        const profileData = await profileResponse.json();
+
+        if (!profileResponse.ok) {
+          if (profileData.detail) {
+            throw new Error(profileData.detail);
+          }
+          throw new Error("Failed to update profile");
+        }
+
+        toast.success("Profile updated successfully");
+        refreshUser();
+      }
     } catch (error) {
-      // Only show toast for non-username validation errors
-      if (
-        !(error instanceof Error && error.message === "Username already exists")
-      ) {
-        toast.error(
-          hasProfile ? "Failed to update profile" : "Failed to create profile"
-        );
-      }
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update profile"
+      );
     } finally {
       setIsLoading(false);
     }

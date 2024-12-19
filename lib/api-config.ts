@@ -79,4 +79,26 @@ export const API_ENDPOINTS = {
     BRANCH: "/analytics/branch",
     PRODUCT: "/analytics/product",
   },
+  APP_MANAGEMENT: {
+    LIST: "/app-management/versions",
+    UPLOAD: "/app-management/upload",
+    ACTIVE_VERSION: "/app-management/active-version",
+    SET_ACTIVE: (id: number) => `/app-management/versions/${id}/set-active`,
+    DELETE: (id: number) => `/app-management/versions/${id}`,
+  },
 } as const;
+
+// Helper function to get full API URL
+export const getApiUrl = (
+  endpoint: string,
+  params?: Record<string, string>
+) => {
+  let url = `${API_BASE_URL}${endpoint}`;
+
+  if (params) {
+    const queryString = new URLSearchParams(params).toString();
+    url += `?${queryString}`;
+  }
+
+  return url;
+};

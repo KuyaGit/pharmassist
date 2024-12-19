@@ -17,6 +17,7 @@ import {
   Users,
   Settings,
   LogOut,
+  Smartphone,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -64,6 +65,12 @@ const navigationGroups = [
     items: [
       { href: "/users", icon: Users, label: "Users" },
       { href: "/expenses", icon: DollarSign, label: "Expenses" },
+      {
+        href: "/app-management",
+        icon: Smartphone,
+        label: "App Management",
+        permission: ["admin"],
+      },
     ],
   },
 ];

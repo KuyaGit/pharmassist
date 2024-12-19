@@ -17,6 +17,7 @@ import {
   Warehouse,
   Package2,
   Users,
+  Smartphone,
 } from "lucide-react";
 import {
   Tooltip,
@@ -70,6 +71,12 @@ export function SideNavBar() {
       items: [
         { href: "/users", icon: Users, label: "Users" },
         { href: "/expenses", icon: DollarSign, label: "Expenses" },
+        {
+          href: "/app-management",
+          icon: Smartphone,
+          label: "App Management",
+          permission: ["admin"],
+        },
       ],
     },
   ];
