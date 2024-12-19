@@ -1,8 +1,11 @@
-import { Loader2, LucideProps } from "lucide-react";
+import { Loader2, LucideProps, Upload, ImageIcon, Pencil } from "lucide-react";
 import Image from "next/image";
 
 export const Icons = {
   spinner: Loader2,
+  upload: Upload,
+  image: ImageIcon,
+  edit: Pencil,
   google: (props: LucideProps) => (
     <svg role="img" viewBox="0 0 24 24" {...props}>
       <path

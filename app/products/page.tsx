@@ -51,6 +51,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import { Icons } from "@/components/icons";
+import Image from "next/image";
+import { HoverImage } from "@/components/ui/HoverImage";
 
 interface Product {
   id: number;
@@ -61,6 +65,7 @@ interface Product {
   wholesale_low_stock_threshold: number;
   is_retail_available: boolean;
   is_wholesale_available: boolean;
+  image_url: string | null;
 }
 
 interface NewProduct {
@@ -71,6 +76,7 @@ interface NewProduct {
   wholesale_low_stock_threshold: number;
   is_retail_available: boolean;
   is_wholesale_available: boolean;
+  image_url?: string;
 }
 
 const showToast = (message: string, type: "success" | "error" | "warning") => {
@@ -129,6 +135,7 @@ export default function Products() {
   const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const router = useRouter();
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const fetchProducts = async () => {
     try {
@@ -157,12 +164,35 @@ export default function Products() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+
     try {
       const token = document.cookie
         .split("; ")
         .find((row) => row.startsWith("token="))
         ?.split("=")[1];
 
+      // If there's a file to upload, upload it first
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const uploadResponse = await fetch(
+          `${API_BASE_URL}/products/upload-image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) throw new Error("Upload failed");
+        const uploadData = await uploadResponse.json();
+        newProduct.image_url = uploadData.image_url;
+      }
+
+      // Then create the product
       const response = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.PRODUCTS.CREATE}`,
         {
@@ -175,22 +205,13 @@ export default function Products() {
         }
       );
 
-      if (!response.ok) throw new Error("Failed to add product");
+      if (!response.ok) throw new Error("Failed to create product");
 
-      await fetchProducts();
       setIsDialogOpen(false);
-      setNewProduct({
-        name: "",
-        cost: 0,
-        srp: 0,
-        retail_low_stock_threshold: 50,
-        wholesale_low_stock_threshold: 50,
-        is_retail_available: true,
-        is_wholesale_available: false,
-      });
-      showToast("Product added successfully", "success");
+      showToast("Product created successfully", "success");
+      fetchProducts();
     } catch (error) {
-      showToast("Failed to add product", "error");
+      showToast("Failed to create product", "error");
       console.error(error);
     } finally {
       setIsLoading(false);
@@ -202,6 +223,26 @@ export default function Products() {
   }, []);
 
   const columns: ColumnDef<Product>[] = [
+    {
+      accessorKey: "image_url",
+      header: "Image",
+      cell: ({ row }) => {
+        const imageUrl = row.original.image_url;
+        return imageUrl ? (
+          <div className="relative w-10 h-10">
+            <HoverImage
+              src={`${API_BASE_URL}${imageUrl}`}
+              alt={row.original.name}
+              className="w-full h-full"
+            />
+          </div>
+        ) : (
+          <div className="w-10 h-10 bg-muted rounded-md flex items-center justify-center">
+            <Icons.image className="w-5 h-5 text-muted-foreground" />
+          </div>
+        );
+      },
+    },
     {
       accessorKey: "name",
       header: "Name",
@@ -288,6 +329,28 @@ export default function Products() {
         .find((row) => row.startsWith("token="))
         ?.split("=")[1];
 
+      // Upload image first if there's a new file
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const uploadResponse = await fetch(
+          `${API_BASE_URL}/products/upload-image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) throw new Error("Upload failed");
+        const uploadData = await uploadResponse.json();
+        // Store relative URL
+        selectedProduct.image_url = uploadData.image_url;
+      }
+
       const response = await fetch(
         `${API_BASE_URL}${API_ENDPOINTS.PRODUCTS.UPDATE(selectedProduct.id)}`,
         {
@@ -305,10 +368,10 @@ export default function Products() {
       await fetchProducts();
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
+      setSelectedFile(null);
       showToast("Product updated successfully", "success");
     } catch (error) {
       showToast("Failed to update product", "error");
-      console.error(error);
     } finally {
       setIsLoading(false);
     }
@@ -415,6 +478,11 @@ export default function Products() {
                     </DialogDescription>
                   </DialogHeader>
                   <div className="grid gap-4 py-4">
+                    <ImageUpload
+                      onUpload={(file) => setSelectedFile(file)}
+                      currentImage={newProduct.image_url}
+                      className="mb-4"
+                    />
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="name" className="text-right">
                         Name
@@ -699,6 +767,23 @@ export default function Products() {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <ImageUpload
+                  onUpload={(file) => {
+                    setSelectedFile(file);
+                    if (selectedProduct) {
+                      setSelectedProduct({
+                        ...selectedProduct,
+                        image_url: URL.createObjectURL(file),
+                      });
+                    }
+                  }}
+                  currentImage={
+                    selectedProduct?.image_url
+                      ? `${API_BASE_URL}${selectedProduct.image_url}`
+                      : null
+                  }
+                  className="mx-auto"
+                />
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-name" className="text-right">
                     Name
@@ -859,8 +944,15 @@ export default function Products() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Saving..." : "Save Changes"}
+                <Button
+                  type="submit"
+                  disabled={isLoading}
+                  className="w-full sm:w-auto"
+                >
+                  {isLoading && (
+                    <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Save Changes
                 </Button>
               </DialogFooter>
             </form>

@@ -72,7 +72,6 @@ import { TimeRange } from "@/types/analytics";
 import { getCookie } from "cookies-next";
 import { API_BASE_URL, API_ENDPOINTS } from "@/lib/api-config";
 import { Badge } from "@/components/ui/badge";
-import { EditProductDialog } from "@/components/EditProductDialog";
 import { CheckCircle2Icon, XCircleIcon, AlertCircleIcon } from "lucide-react";
 import { Product } from "@/types/products";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -91,6 +90,9 @@ import { DataTable } from "@/components/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { useBranchTypeStore } from "@/lib/store/branch-type-store";
+import { ImageUpload } from "@/components/ui/ImageUpload";
+import { Icons } from "@/components/icons";
+import Image from "next/image";
 
 interface BranchStock {
   id: number;
@@ -116,6 +118,7 @@ interface EditProductForm {
   is_wholesale_available: boolean;
   retail_low_stock_threshold: number;
   wholesale_low_stock_threshold: number;
+  image_url?: string | null;
 }
 
 interface BranchPerformanceData {
@@ -291,6 +294,7 @@ export default function ProductDetails() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const fetchProductDetails = async () => {
     try {
@@ -354,11 +358,36 @@ export default function ProductDetails() {
 
     setIsLoading(true);
     try {
+      const token = getCookie("token");
+
+      // Upload image first if there's a new file
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const uploadResponse = await fetch(
+          `${API_BASE_URL}/products/upload-image`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+          }
+        );
+
+        if (!uploadResponse.ok) throw new Error("Upload failed");
+        const uploadData = await uploadResponse.json();
+        // Store relative URL
+        selectedProduct.image_url = uploadData.image_url;
+      }
+
       await updateProduct(selectedProduct.id, selectedProduct);
       await fetchProductDetails();
       await refetch();
       setIsEditDialogOpen(false);
       setSelectedProduct(null);
+      setSelectedFile(null);
       showToast("Product updated successfully", "success");
     } catch (error) {
       showToast("Failed to update product", "error");
@@ -430,14 +459,33 @@ export default function ProductDetails() {
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-2">
-              <div className="flex flex-col gap-1">
+          <div className="flex items-start justify-between gap-6">
+            {/* Left side: Image and Product Info */}
+            <div className="flex items-start gap-6">
+              {/* Image Section */}
+              <div className="flex-shrink-0">
+                {product?.image_url ? (
+                  <div className="relative w-32 h-32">
+                    <Image
+                      src={`${API_BASE_URL}${product.image_url}`}
+                      alt={product.name}
+                      fill
+                      className="object-cover rounded-lg"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 bg-muted rounded-lg flex items-center justify-center">
+                    <Icons.image className="w-12 h-12 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+
+              {/* Product Details */}
+              <div className="space-y-2">
                 <h1 className="text-3xl font-bold tracking-tight">
                   {product?.name || "Loading..."}
                 </h1>
-
-                <div className="flex gap-2 mt-1">
+                <div className="flex gap-2">
                   {product?.is_retail_available && (
                     <Badge variant="outline">Retail</Badge>
                   )}
@@ -447,7 +495,16 @@ export default function ProductDetails() {
                 </div>
               </div>
             </div>
+
+            {/* Right side: Actions */}
             <div className="flex items-center gap-3">
+              <Button variant="outline" onClick={() => router.back()}>
+                Back
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleEdit}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit Details
+              </Button>
               <Select
                 value={timeRange}
                 onValueChange={(value: TimeRange) => setTimeRange(value)}
@@ -462,13 +519,6 @@ export default function ProductDetails() {
                   <SelectItem value="1y">Last year</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={() => router.back()}>
-                Back
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleEdit}>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit Details
-              </Button>
             </div>
           </div>
 
@@ -1145,6 +1195,11 @@ export default function ProductDetails() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
+              <ImageUpload
+                onUpload={(file) => setSelectedFile(file)}
+                currentImage={selectedProduct?.image_url}
+                className="mb-4"
+              />
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="edit-name" className="text-right">
                   Name
