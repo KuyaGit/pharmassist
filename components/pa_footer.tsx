@@ -101,10 +101,10 @@ export default function Footer() {
 }
 
 const quickLinks = [
-  { label: "Home", href: "/#home" },
-  { label: "Features", href: "/#features" },
-  { label: "About", href: "/#about" },
-  { label: "Contact", href: "/#contact" },
+  { label: "Home", href: "/#pa-home" },
+  { label: "Features", href: "/#pa-features" },
+  { label: "About", href: "/#pa-about" },
+  { label: "Contact", href: "/#pa-contact" },
   { label: "Login", href: "/pharmassist" },
   { label: "Pomona Home", href: "/" },
 ];

@@ -8,7 +8,7 @@ export function LampDemo() {
     <LampContainer>
       <motion.h1
         initial={{ opacity: 0.5, y: 100 }}
-        whileInView={{ opacity: 1, y: 0 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{
           delay: 0.3,
           duration: 0.8,
@@ -52,7 +52,7 @@ export const LampContainer = ({
       <div className="relative flex w-full flex-1 scale-y-125 items-center justify-center isolate z-0">
         <motion.div
           initial={{ opacity: 0.5, width: isMobile ? "10rem" : "15rem" }}
-          whileInView={{ opacity: 1, width: isMobile ? "20rem" : "30rem" }}
+          animate={{ opacity: 1, width: isMobile ? "20rem" : "30rem" }}
           transition={{
             delay: 0.3,
             duration: 0.8,
@@ -68,7 +68,7 @@ export const LampContainer = ({
         </motion.div>
         <motion.div
           initial={{ opacity: 0.5, width: isMobile ? "10rem" : "15rem" }}
-          whileInView={{ opacity: 1, width: isMobile ? "20rem" : "30rem" }}
+          animate={{ opacity: 1, width: isMobile ? "20rem" : "30rem" }}
           transition={{
             delay: 0.3,
             duration: 0.8,
@@ -87,7 +87,7 @@ export const LampContainer = ({
         <div className="absolute inset-auto z-50 h-36 w-[28rem] -translate-y-1/2 rounded-full bg-cyan-500 opacity-50 blur-3xl"></div>
         <motion.div
           initial={{ width: isMobile ? "6rem" : "8rem" }}
-          whileInView={{ width: isMobile ? "12rem" : "16rem" }}
+          animate={{ width: isMobile ? "12rem" : "16rem" }}
           transition={{
             delay: 0.3,
             duration: 0.8,
@@ -97,7 +97,7 @@ export const LampContainer = ({
         ></motion.div>
         <motion.div
           initial={{ width: isMobile ? "10rem" : "15rem" }}
-          whileInView={{ width: isMobile ? "20rem" : "30rem" }}
+          animate={{ width: isMobile ? "20rem" : "30rem" }}
           transition={{
             delay: 0.3,
             duration: 0.8,

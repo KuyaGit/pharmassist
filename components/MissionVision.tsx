@@ -14,7 +14,7 @@ export default function MissionVision() {
           animate={{ opacity: 1, y: 0 }}
           transition={{
             duration: 0.8,
-            ease: [0.21, 1.11, 0.81, 0.99], // custom ease curve for smooth entrance
+            ease: [0.21, 1.11, 0.81, 0.99],
           }}
           className="text-center mb-20"
         >
@@ -80,7 +80,7 @@ export default function MissionVision() {
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-2/3 text-center md:text-left">
+            <div className="w-full md:w-2/3 text-center md:text-right">
               <h3 className="text-3xl font-bold mb-6 text-gray-900">
                 Our Vision
               </h3>

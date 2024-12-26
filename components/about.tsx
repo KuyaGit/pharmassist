@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 
 export default function About() {
   return (
-    <section className="py-20 bg-black" id="about">
+    <section className="py-20 bg-black" id="pa-about">
       <div className="max-w-4xl mx-auto px-4">
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           className="text-3xl font-bold text-center mb-6 text-gray-100"
         >
           About PharmAssist
@@ -19,7 +19,7 @@ export default function About() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           className="text-lg text-gray-400 text-center mb-8"
         >
           PharmAssist is a cutting-edge pharmacy management platform designed to
@@ -35,14 +35,14 @@ export default function About() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 + index * 0.2 }}
-              viewport={{ once: false }}
+              viewport={{ once: true }}
               className="text-center"
             >
               <motion.div
                 initial={{ scale: 0.5 }}
                 whileInView={{ scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.4 + index * 0.2 }}
-                viewport={{ once: false }}
+                viewport={{ once: true }}
                 className="text-4xl font-bold text-primary mb-2"
               >
                 {stat.value}
@@ -51,7 +51,7 @@ export default function About() {
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
                 transition={{ duration: 0.5, delay: 0.6 + index * 0.2 }}
-                viewport={{ once: false }}
+                viewport={{ once: true }}
                 className="text-gray-600"
               >
                 {stat.label}

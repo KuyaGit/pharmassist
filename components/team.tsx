@@ -10,24 +10,24 @@ const teamMembers = [
     role: "Lead Developer",
     image: "/team/bibas.jpg",
     bio: "10+ years of experience in pharmacy software development",
-    linkedin: "https://linkedin.com/in/sarah-johnson",
-    github: "https://github.com/sarahj",
+    linkedin: "https://www.linkedin.com/in/georly-bibas-039970228/",
+    github: "https://github.com/Moonlight231",
   },
   {
     name: "Al Princess Cortez",
     role: "Product Manager",
     image: "/team/cortez.jpg",
     bio: "Former pharmacist turned product manager",
-    linkedin: "https://linkedin.com/in/michael-chen",
-    github: "https://github.com/michaelc",
+    linkedin: "https://www.linkedin.com/in/al-princess-cortez-aa86942b2/",
+    github: "https://github.com/Alprincess",
   },
   {
     name: "John Rey Talion",
-    role: "UX Designer",
+    role: "Mobile Developer",
     image: "/team/talion.jpg",
     bio: "Specialized in healthcare UX/UI design",
-    linkedin: "https://linkedin.com/in/emily-rodriguez",
-    github: "https://github.com/emilyr",
+    linkedin: "https://www.linkedin.com/in/john-rey-talion-00b9172b1/",
+    github: "https://github.com/Yelnah",
   },
 ];
 
@@ -45,7 +45,7 @@ export default function Team() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false }}
+          viewport={{ once: true }}
           transition={{ duration: 0.8 }}
           className="text-center"
         >
@@ -66,7 +66,7 @@ export default function Team() {
               key={member.name}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false }}
+              viewport={{ once: true }}
               transition={{ duration: 0.8, delay: index * 0.2 }}
               className={`relative group ${
                 member.name === "Al Princess Cortez" ? "mt-16" : ""

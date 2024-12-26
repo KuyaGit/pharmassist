@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { motion } from "framer-motion";
 
 import { HeroParallax } from "./ui/hero-parallax";
 
@@ -99,43 +100,53 @@ export default function Hero() {
             and powerful analytics.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
-            <Link
-              href="/#contact"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-base sm:text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              Get Started
-              <svg
-                className="ml-2 w-4 h-4 sm:w-5 sm:h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <Link href="/pharmassist-home/#pa-contact">
+              <motion.button
+                whileHover={{
+                  y: -2,
+                  boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-base sm:text-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+                Get Started
+                <svg
+                  className="ml-2 w-4 h-4 sm:w-5 sm:h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </motion.button>
             </Link>
-            <Link
-              href="/#about"
-              className="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-base sm:text-lg font-medium bg-transparent text-white border-2 border-blue-600 hover:bg-blue-600/10 transition-colors duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              Learn More
-              <svg
-                className="ml-2 w-4 h-4 sm:w-5 sm:h-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+            <Link href="/pharmassist-home/#pa-about">
+              <motion.button
+                whileHover={{
+                  y: -2,
+                  boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                }}
+                className="w-full sm:w-auto inline-flex items-center justify-center px-6 sm:px-8 py-2.5 sm:py-3 rounded-lg text-base sm:text-lg font-medium bg-transparent text-white border-2 border-blue-600 hover:bg-blue-600/10 transition-colors duration-200"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+                Learn More
+                <svg
+                  className="ml-2 w-4 h-4 sm:w-5 sm:h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </motion.button>
             </Link>
           </div>
         </div>
