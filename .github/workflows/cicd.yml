@@ -23,10 +23,10 @@ jobs:
         cache: 'npm'
 
     - name: Install dependencies
-      run: npm ci
+      run: npm i
  
     - name: Build
-      run: npm run build --if-present
+      run: npx next build
       
     - name: Change Directory
       run: cd /home/pomosa/runner-next/_work/pharmassist/pharmassist
