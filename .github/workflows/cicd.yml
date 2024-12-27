@@ -1,0 +1,42 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: self-hosted
+    
+    strategy:
+      matrix:
+        node-version: [20.10.0]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Create env file
+      run: |
+        echo "NEXT_WEBSITE_URL=${{ secrets.NEXT_WEBSITE_URL }}" >> .env.production
+        echo "NEXT_PUBLIC_NEXT_GA_TRACKING_ID=${{ secrets.NEXT_PUBLIC_NEXT_GA_TRACKING_ID }}" >> .env.production
+      working-directory: ${{ github.workspace }}
+
+    - name: Print contents of .env.production file
+      run: cat .env.production
+ 
+    - name: Build
+      run: npm run build --if-present
+      
+    # - name: Change Directory
+    #   run: cd /home/ubuntu/actions-runner/_work/YOUR_PROJECT_NAME/YOUR_PROJECT_NAME
+    # - run: pm2 reload 0 
