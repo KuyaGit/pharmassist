@@ -28,7 +28,6 @@ jobs:
     - name: Create env file
       run: |
         echo "NEXT_WEBSITE_URL=${{ secrets.NEXT_WEBSITE_URL }}" >> .env.production
-        echo "NEXT_PUBLIC_NEXT_GA_TRACKING_ID=${{ secrets.NEXT_PUBLIC_NEXT_GA_TRACKING_ID }}" >> .env.production
       working-directory: ${{ github.workspace }}
 
     - name: Print contents of .env.production file
