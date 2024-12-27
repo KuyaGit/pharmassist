@@ -28,6 +28,6 @@ jobs:
     - name: Build
       run: npm run build --if-present
       
-    # - name: Change Directory
-    #   run: cd /home/ubuntu/actions-runner/_work/YOUR_PROJECT_NAME/YOUR_PROJECT_NAME
-    # - run: pm2 reload 0 
+    - name: Change Directory
+      run: cd /home/pomosa/runner-next/_work/pharmassist/pharmassist
+    - run: pm2 reload 0 
