@@ -22,6 +22,6 @@ jobs:
     - name: Build
       run: npx next build
       
-    - name: Change Directory
-      run: cd /home/pomosa/runner-next/_work/pharmassist/pharmassist
-    - run: pm2 reload 0 
+    # - name: Change Directory
+    #   run: cd /home/pomosa/runner-next/_work/pharmassist/pharmassist
+    # - run: pm2 reload 0 
