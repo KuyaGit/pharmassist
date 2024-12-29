@@ -15,8 +15,8 @@ export const API_ENDPOINTS = {
     UPDATE_INITIAL_CREDENTIALS: "/auth/initial-credentials",
   },
   BRANCHES: {
-    LIST: "/branches",
-    CREATE: "/branches",
+    LIST: "/branches/",
+    CREATE: "/branches/",
     GET: (id: number) => `/branches/${id}`,
     UPDATE: (id: number) => `/branches/${id}`,
     DELETE: (id: number) => `/branches/${id}`,
