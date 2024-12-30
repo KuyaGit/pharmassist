@@ -773,13 +773,13 @@ export default function Products() {
                     if (selectedProduct) {
                       setSelectedProduct({
                         ...selectedProduct,
-                        image_url: URL.createObjectURL(file),
+                        image_url: null,
                       });
                     }
                   }}
                   currentImage={
                     selectedProduct?.image_url
-                      ? `${API_BASE_URL}${selectedProduct.image_url}`
+                      ? selectedProduct.image_url
                       : null
                   }
                   className="mx-auto"
