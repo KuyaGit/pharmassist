@@ -35,7 +35,7 @@ export default function AppManagement() {
   const [isUploading, setIsUploading] = useState(false);
   const [newVersion, setNewVersion] = useState({
     version_name: "",
-    version_code: "",
+    version_code: "1",
     release_notes: "",
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -74,6 +74,11 @@ export default function AppManagement() {
         ...prev,
         version_code: String(highestCode + 1),
       }));
+    } else {
+      setNewVersion((prev) => ({
+        ...prev,
+        version_code: "1",
+      }));
     }
   }, [versions]);
 
@@ -102,10 +107,7 @@ export default function AppManagement() {
       const formData = new FormData();
       formData.append("apk_file", selectedFile);
       formData.append("version_name", newVersion.version_name);
-      formData.append(
-        "version_code",
-        String(parseInt(newVersion.version_code))
-      );
+      formData.append("version_code", newVersion.version_code);
       formData.append("release_notes", newVersion.release_notes);
 
       const response = await fetch(`${API_BASE_URL}/app-management/upload`, {
