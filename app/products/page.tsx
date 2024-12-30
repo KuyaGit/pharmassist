@@ -779,7 +779,7 @@ export default function Products() {
                   }}
                   currentImage={
                     selectedProduct?.image_url
-                      ? selectedProduct.image_url
+                      ? `${API_BASE_URL}${selectedProduct.image_url}`
                       : null
                   }
                   className="mx-auto"
