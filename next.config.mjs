@@ -4,24 +4,24 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8000/:path*",
+        destination: "https://api.pomonabatangas.com/:path*",
       },
     ];
   },
   images: {
-    domains: ["localhost"],
+    domains: ["localhost", "api.pomonabatangas.com"],
     remotePatterns: [
       {
-        protocol: "http",
-        hostname: "localhost",
+        protocol: "https",
+        hostname: "api.pomonabatangas.com",
         port: "8000",
         pathname: "/**",
       },
     ],
   },
   eslint: {
-    ignoreDuringBuilds: true
-  }
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
