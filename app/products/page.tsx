@@ -231,7 +231,7 @@ export default function Products() {
         return imageUrl ? (
           <div className="relative w-10 h-10">
             <HoverImage
-              src={`${API_BASE_URL}/static${imageUrl}`}
+              src={`${API_BASE_URL}${imageUrl}`}
               alt={row.original.name}
               className="w-full h-full"
             />
