@@ -298,7 +298,7 @@ export default function AppManagement() {
                         </Button>
                       </div>
                       {version.release_notes && (
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-sm text-muted-foreground whitespace-pre-line">
                           {version.release_notes}
                         </p>
                       )}
