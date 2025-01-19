@@ -38,7 +38,7 @@ export default function Footer() {
             <h4 className="text-white text-sm font-semibold mb-4">Features</h4>
             <ul className="space-y-2">
               {features.map((feature) => (
-                <li key={feature.href}>
+                <li key={feature.id}>
                   <Link
                     href={feature.href}
                     className="text-sm hover:text-white transition-colors duration-200"
@@ -101,17 +101,33 @@ export default function Footer() {
 }
 
 const quickLinks = [
-  { label: "Home", href: "/#pa-home" },
-  { label: "Features", href: "/#pa-features" },
-  { label: "About", href: "/#pa-about" },
-  { label: "Contact", href: "/#pa-contact" },
+  { label: "Home", href: "/pharmassist-home/#pa-home" },
+  { label: "Features", href: "/pharmassist-home/#pa-features" },
+  { label: "About", href: "/pharmassist-home/#pa-about" },
+  { label: "Contact", href: "/pharmassist-home/#pa-contact" },
   { label: "Login", href: "/pharmassist" },
   { label: "Pomona Home", href: "/" },
 ];
 
 const features = [
-  { label: "Inventory Management", id: "inventory", href: "/#inventory" },
-  { label: "Analytics Dashboard", id: "analytics", href: "/#analytics" },
-  { label: "Expense Tracking", id: "expenses", href: "/#expenses" },
-  { label: "Mobile Access", id: "mobile", href: "/#mobile" },
+  {
+    label: "Inventory Management",
+    id: "inventory",
+    href: "/pharmassist-home/#pa-features",
+  },
+  {
+    label: "Analytics Dashboard",
+    id: "analytics",
+    href: "/pharmassist-home/#pa-features",
+  },
+  {
+    label: "Expense Tracking",
+    id: "expenses",
+    href: "/pharmassist-home/#pa-features",
+  },
+  {
+    label: "Mobile Access",
+    id: "mobile",
+    href: "/pharmassist-home/#pa-features",
+  },
 ];

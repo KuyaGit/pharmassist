@@ -20,8 +20,11 @@ const Contact = () => {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl font-bold mb-4">
-            Let's Start a <span className="text-blue-600">Conversation</span>
+          <h2 className="text-4xl font-bold mb-4 text-gray-900 dark:text-white">
+            Let's Start a{" "}
+            <span className="text-blue-600 dark:text-blue-400">
+              Conversation
+            </span>
           </h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
             Have questions? We'd love to hear from you. Visit our store or
@@ -42,7 +45,9 @@ const Contact = () => {
                   <MapPinIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-xl mb-2">Address</h4>
+                  <h4 className="font-bold text-xl mb-2 text-gray-900">
+                    Address
+                  </h4>
                   <p className="text-gray-600">
                     35 Evangelista St., Batangas City
                   </p>
@@ -55,7 +60,9 @@ const Contact = () => {
                   <PhoneIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h4 className="font-bold text-xl mb-2">Phone</h4>
+                  <h4 className="font-bold text-xl mb-2 text-gray-900 dark:text-white">
+                    Phone
+                  </h4>
                   <p className="text-gray-600">
                     Tel: (043) 783-1285 / (043) 402-2912
                   </p>
@@ -75,7 +82,9 @@ const Contact = () => {
             </div>
 
             <div className="pt-8 border-t border-gray-200">
-              <h4 className="font-bold text-xl mb-6">Order Information</h4>
+              <h4 className="font-bold text-xl mb-6 text-gray-900 dark:text-white">
+                Order Information
+              </h4>
               <ul className="space-y-4">
                 <li className="flex items-center space-x-3">
                   <span className="w-2 h-2 rounded-full bg-blue-600"></span>

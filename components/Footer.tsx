@@ -51,14 +51,6 @@ const Footer = () => {
                   Contact
                 </button>
               </li>
-              <li>
-                <a
-                  href="/pharmassist"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Login
-                </a>
-              </li>
             </ul>
           </div>
 
@@ -67,76 +59,75 @@ const Footer = () => {
             <h4 className="text-lg font-bold mb-4">Features</h4>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => handleScroll("features")}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Ready To Provide
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => handleScroll("features")}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Quality & Affordable
-                </a>
+                </button>
               </li>
               <li>
-                <a
-                  href="#"
+                <button
+                  onClick={() => handleScroll("features")}
                   className="text-gray-400 hover:text-white transition-colors"
                 >
                   Here To Assist
-                </a>
+                </button>
               </li>
             </ul>
           </div>
 
-          {/* Social Media */}
+          {/* Company Portal Section */}
           <div>
-            <h4 className="text-lg font-bold mb-4">Connect With Us</h4>
-            <div className="flex space-x-4">
-              <a
-                href="https://www.facebook.com/pomonabatangas/"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <span className="sr-only">Facebook</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
+            <h4 className="text-lg font-bold mb-4">Company Portal</h4>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <a
+                  href="/pharmassist"
+                  className="group relative inline-flex items-center px-6 py-2.5 text-sm font-semibold text-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
                 >
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-              </a>
-
-              <a
-                href="https://www.facebook.com/pomonabatangas/"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <span className="sr-only">Messenger</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.936 1.444 5.566 3.743 7.31v3.447l3.417-1.887c.896.251 1.846.373 2.84.373 5.523 0 10-4.145 10-9.243S17.523 2 12 2zm1.004 12.462l-2.554-2.725-4.989 2.725 5.488-5.847 2.618 2.725 4.925-2.725-5.488 5.847z" />
-                </svg>
-              </a>
-              <a
-                href="pomonapd.inc@gmail.com"
-                className="text-gray-400 hover:text-white transition-colors"
-              >
-                <span className="sr-only">Email</span>
-                <svg
-                  className="h-6 w-6"
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                </svg>
-              </a>
+                  <span className="absolute inset-0 bg-gradient-to-r from-blue-600 via-blue-700 to-blue-800"></span>
+                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 duration-300 bg-gradient-to-r from-blue-500 via-blue-600 to-blue-700"></span>
+                  <span className="relative flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
+                      />
+                    </svg>
+                    Company Portal Login
+                  </span>
+                </a>
+                <p className="text-xs text-gray-400 italic">
+                  For authorized Pomona personnel only
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-400">
+                  Access to inventory management, analytics, and administrative
+                  tools
+                </p>
+                <p className="text-sm text-gray-400">
+                  <span className="text-blue-400">✨ New:</span> Pharmacists can
+                  now download our mobile app after logging in for on-the-go
+                  access
+                </p>
+              </div>
             </div>
           </div>
         </div>

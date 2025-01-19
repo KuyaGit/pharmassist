@@ -16,10 +16,11 @@ export default function MissionVision() {
             duration: 0.8,
             ease: [0.21, 1.11, 0.81, 0.99],
           }}
-          className="text-center mb-20"
+          className="text-center mb-16"
         >
           <h2 className="text-4xl font-bold mb-4">
-            Our <span className="text-blue-600">Purpose</span>
+            <span className="text-gray-900 dark:text-white">Our</span>{" "}
+            <span className="text-blue-600">Purpose</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Driving excellence in pharmaceutical distribution through commitment
@@ -27,7 +28,7 @@ export default function MissionVision() {
           </p>
         </motion.div>
 
-        <div className="max-w-6xl mx-auto space-y-24">
+        <div className="max-w-6xl mx-auto space-y-16">
           {/* Mission */}
           <motion.div
             initial={{ opacity: 0, x: -100 }}
@@ -38,9 +39,9 @@ export default function MissionVision() {
               delay: 0.2,
               ease: [0.21, 1.11, 0.81, 0.99],
             }}
-            className="flex flex-col md:flex-row items-center gap-12"
+            className="flex flex-col md:flex-row items-center gap-8 md:gap-4"
           >
-            <div className="w-full md:w-1/3 flex justify-center">
+            <div className="w-full md:w-1/4 flex justify-center">
               <div className="relative w-32 h-32">
                 <div className="absolute inset-0 bg-blue-600/20 rounded-full blur-2xl" />
                 <div className="relative w-full h-full rounded-full bg-gradient-to-r from-blue-600 to-blue-700 flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
@@ -48,8 +49,8 @@ export default function MissionVision() {
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-2/3 text-center md:text-left">
-              <h3 className="text-3xl font-bold mb-6 text-gray-900">
+            <div className="w-full md:w-3/4 text-center md:text-left">
+              <h3 className="text-3xl font-bold mb-4 text-gray-900">
                 Our Mission
               </h3>
               <p className="text-xl text-gray-600 leading-relaxed">
@@ -70,9 +71,9 @@ export default function MissionVision() {
               delay: 0.4,
               ease: [0.21, 1.11, 0.81, 0.99],
             }}
-            className="flex flex-col md:flex-row-reverse items-center gap-12"
+            className="flex flex-col md:flex-row-reverse items-center gap-8 md:gap-4"
           >
-            <div className="w-full md:w-1/3 flex justify-center">
+            <div className="w-full md:w-1/4 flex justify-center">
               <div className="relative w-32 h-32">
                 <div className="absolute inset-0 bg-blue-600/20 rounded-full blur-2xl" />
                 <div className="relative w-full h-full rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
@@ -80,8 +81,8 @@ export default function MissionVision() {
                 </div>
               </div>
             </div>
-            <div className="w-full md:w-2/3 text-center md:text-right">
-              <h3 className="text-3xl font-bold mb-6 text-gray-900">
+            <div className="w-full md:w-3/4 text-center md:text-right">
+              <h3 className="text-3xl font-bold mb-4 text-gray-900">
                 Our Vision
               </h3>
               <p className="text-xl text-gray-600 leading-relaxed">

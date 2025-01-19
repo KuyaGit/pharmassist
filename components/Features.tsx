@@ -78,7 +78,7 @@ export default function Features() {
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <h2 className="text-4xl font-bold mb-4">
+          <h2 className="text-4xl font-bold mb-4 text-gray-900">
             Why Choose <span className="text-blue-600">Pomona</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
@@ -124,8 +124,10 @@ export default function Features() {
           viewport={{ once: true }}
           className="text-center mb-12 mt-24"
         >
-          <h3 className="text-3xl font-bold mb-4">What Our Clients Say</h3>
-          <p className="text-gray-600">
+          <h3 className="text-3xl font-bold mb-4 text-gray-900">
+            What Our Clients Say
+          </h3>
+          <p className="text-xl text-gray-600">
             Hear what our valued healthcare partners have to say about their
             experience with Pomona
           </p>
