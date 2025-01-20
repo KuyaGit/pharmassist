@@ -57,6 +57,9 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { Package2 } from "lucide-react";
+import { HoverImage } from "@/components/ui/HoverImage";
 
 interface Branch {
   id: number;
@@ -84,6 +87,7 @@ interface BranchProduct {
   product_name: string;
   days_in_low_stock: number;
   low_stock_since: string | null;
+  image_url: string | null;
 }
 
 export default function BranchDetails() {
@@ -103,6 +107,25 @@ export default function BranchDetails() {
     {
       accessorKey: "product_name",
       header: "Product Name",
+      cell: ({ row }) => {
+        const imageUrl = row.original.image_url;
+        return (
+          <div className="flex items-center gap-3 group">
+            <div className="h-10 w-10 rounded-lg border bg-muted/50 flex items-center justify-center overflow-hidden">
+              {imageUrl ? (
+                <HoverImage
+                  src={`${API_BASE_URL}${imageUrl}`}
+                  alt={row.original.product_name}
+                  className="w-full h-full"
+                />
+              ) : (
+                <Package2 className="h-5 w-5 text-muted-foreground" />
+              )}
+            </div>
+            <span className="font-medium">{row.original.product_name}</span>
+          </div>
+        );
+      },
     },
     {
       accessorKey: "active_quantity",
