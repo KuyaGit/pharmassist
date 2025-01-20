@@ -19,6 +19,13 @@ import { SideNavBar } from "@/components/SideNavBar";
 import { TopBar } from "@/components/TopBar";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AppVersion {
   id: number;
@@ -40,6 +47,10 @@ export default function AppManagement() {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [latestVersionCode, setLatestVersionCode] = useState(0);
+  const [isVersionDialogOpen, setIsVersionDialogOpen] = useState(false);
+  const [selectedVersion, setSelectedVersion] = useState<AppVersion | null>(
+    null
+  );
 
   const fetchVersions = async () => {
     try {
@@ -134,6 +145,11 @@ export default function AppManagement() {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  const handleVersionClick = (version: AppVersion) => {
+    setSelectedVersion(version);
+    setIsVersionDialogOpen(true);
   };
 
   return (
@@ -268,7 +284,8 @@ export default function AppManagement() {
                   {versions.map((version) => (
                     <div
                       key={version.id}
-                      className="p-4 border rounded-lg space-y-2 hover:bg-muted/50 transition-colors"
+                      className="p-4 border rounded-lg space-y-2 hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => handleVersionClick(version)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
@@ -297,11 +314,6 @@ export default function AppManagement() {
                           </a>
                         </Button>
                       </div>
-                      {version.release_notes && (
-                        <p className="text-sm text-muted-foreground whitespace-pre-line">
-                          {version.release_notes}
-                        </p>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -310,6 +322,58 @@ export default function AppManagement() {
           </div>
         </div>
       </div>
+      <Dialog open={isVersionDialogOpen} onOpenChange={setIsVersionDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Version Details</DialogTitle>
+            <DialogDescription>
+              Detailed information about version {selectedVersion?.version_name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedVersion && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <h2 className="text-xl font-semibold flex items-center gap-2">
+                    v{selectedVersion.version_name}
+                    {selectedVersion.is_active && (
+                      <Badge variant="success" className="gap-1">
+                        Active
+                      </Badge>
+                    )}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">
+                    Version Code: {selectedVersion.version_code}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Released on{" "}
+                    {format(new Date(selectedVersion.created_at), "PPP")}
+                  </p>
+                </div>
+                <Button variant="outline" size="sm" asChild>
+                  <a
+                    href={`${API_BASE_URL}${selectedVersion.apk_file_path}`}
+                    download
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download APK
+                  </a>
+                </Button>
+              </div>
+              {selectedVersion.release_notes && (
+                <div className="space-y-2">
+                  <h3 className="font-medium">Release Notes</h3>
+                  <div className="rounded-lg border bg-muted/50 p-4 max-h-[300px] overflow-y-auto">
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedVersion.release_notes}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
