@@ -33,6 +33,7 @@ import {
   faMoneyBillWave,
   faStore,
   faEye,
+  faClock,
 } from "@fortawesome/free-solid-svg-icons";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -187,11 +188,7 @@ export default function InventoryReports() {
   });
 
   const totalReports = filteredReports.length;
-  const totalValue = filteredReports.reduce((sum, report) => {
-    return (
-      sum + report.items.reduce((itemSum, item) => itemSum + item.peso_value, 0)
-    );
-  }, 0);
+
   const totalItems = filteredReports.reduce(
     (sum, report) => sum + report.items_count,
     0
@@ -202,6 +199,17 @@ export default function InventoryReports() {
   const unviewedReports = filteredReports.filter(
     (report) => report.viewed_by === null
   ).length;
+
+  const mostRecentReport =
+    filteredReports.length > 0 ? filteredReports[0] : null;
+
+  const mostRecentReportAge = mostRecentReport
+    ? Math.floor(
+        (new Date().getTime() -
+          new Date(mostRecentReport.created_at).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : 0;
 
   return (
     <div className="flex h-screen overflow-hidden bg-muted/40">
@@ -238,20 +246,24 @@ export default function InventoryReports() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Total Value
+                  Most Recent Report
                 </CardTitle>
                 <FontAwesomeIcon
-                  icon={faMoneyBillWave}
+                  icon={faClock}
                   size="2x"
                   className="text-icon"
                 />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {formatCurrency(totalValue)}
+                  {mostRecentReportAge === 0
+                    ? "Today"
+                    : `${mostRecentReportAge} day${
+                        mostRecentReportAge === 1 ? "" : "s"
+                      } ago`}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Total inventory value
+                  Age of most recent inventory report
                 </p>
               </CardContent>
             </Card>
