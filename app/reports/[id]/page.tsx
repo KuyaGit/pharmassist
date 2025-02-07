@@ -129,8 +129,130 @@ export default function ReportPage({ params }: { params: { id: string } }) {
         </div>
       </div>
 
-      <div className="hidden print:block print:m-4">
-        <ReportContent report={report} params={params} />
+      <div className="hidden print:block print:landscape">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold mb-2">
+            Inventory Report #{params.id}
+          </h1>
+          <p className="text-muted-foreground">{report.branch_name}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Time Information
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Report Date:</span>
+                <span>{format(new Date(report.created_at), "PPP")}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Period Start:</span>
+                <span>
+                  {format(new Date(report.start_date), "EEE, MMM d, h:mm a")}
+                </span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Period End:</span>
+                <span>
+                  {format(
+                    new Date(report.end_date),
+                    "EEE, MMM d, h:mm a, yyyy"
+                  )}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Product Movement
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Total Items:</span>
+                <span>{report.items_count}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Delivery:</span>
+                <span>{report.products_with_delivery}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Transfer:</span>
+                <span>{report.products_with_transfer}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Pull Out:</span>
+                <span>{report.products_with_pullout}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Sales Information
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Products with Offtake:
+                </span>
+                <span>{report.products_with_offtake}</span>
+              </p>
+              <p className="flex justify-between font-medium text-lg mt-4">
+                <span>Total Offtake Value:</span>
+                <span>
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(report.total_offtake_value)}
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <table className="w-full text-sm border-collapse">
+          <thead>
+            <tr className="border-b">
+              <th className="text-left p-2">Product Name</th>
+              <th className="text-right p-2">SRP</th>
+              <th className="text-right p-2">Beginning</th>
+              <th className="text-right p-2">Deliveries</th>
+              <th className="text-right p-2">Transfers</th>
+              <th className="text-right p-2">Pull Outs</th>
+              <th className="text-right p-2">Offtake</th>
+              <th className="text-right p-2">Selling Area</th>
+              <th className="text-right p-2">Peso Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.items.map((item: any) => (
+              <tr key={item.id} className="border-b">
+                <td className="p-2">{item.product_name}</td>
+                <td className="text-right p-2">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(item.current_srp)}
+                </td>
+                <td className="text-right p-2">{item.beginning}</td>
+                <td className="text-right p-2">{item.deliver}</td>
+                <td className="text-right p-2">{item.transfer}</td>
+                <td className="text-right p-2">{item.pull_out}</td>
+                <td className="text-right p-2">{item.offtake}</td>
+                <td className="text-right p-2">{item.selling_area}</td>
+                <td className="text-right p-2">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(item.peso_value)}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </>
   );
@@ -185,10 +307,44 @@ function ReportContent({
                   {formatPeriodDate(new Date(report.end_date))}
                 </div>
               </div>
-
               <div>
                 <p className="text-sm text-muted-foreground">Items Count</p>
                 <p className="font-medium">{report.items_count}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Products with Delivery
+                </p>
+                <p className="font-medium">{report.products_with_delivery}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Products with Transfer
+                </p>
+                <p className="font-medium">{report.products_with_transfer}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Products with Pull Out
+                </p>
+                <p className="font-medium">{report.products_with_pullout}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Products with Offtake
+                </p>
+                <p className="font-medium">{report.products_with_offtake}</p>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Total Offtake Value
+                </p>
+                <p className="font-medium">
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(report.total_offtake_value)}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -216,17 +372,87 @@ function ReportContent({
       </div>
 
       {/* Print view */}
-      <div className="hidden print:block">
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold">Inventory Report #{params.id}</h1>
-          <div className="mt-2">
-            <p>Branch: {report.branch_name}</p>
-            <p>Report Date: {format(new Date(report.created_at), "PPP")}</p>
-            <p>
-              Period:{" "}
-              {format(new Date(report.start_date), "EEE, MMM d, h:mm a")} to{" "}
-              {format(new Date(report.end_date), "EEE, MMM d, h:mm a, yyyy")}
-            </p>
+      <div className="hidden print:block print:landscape">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold mb-2">
+            Inventory Report #{params.id}
+          </h1>
+          <p className="text-muted-foreground">{report.branch_name}</p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-6 mb-8">
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Time Information
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Report Date:</span>
+                <span>{format(new Date(report.created_at), "PPP")}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Period Start:</span>
+                <span>
+                  {format(new Date(report.start_date), "EEE, MMM d, h:mm a")}
+                </span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Period End:</span>
+                <span>
+                  {format(
+                    new Date(report.end_date),
+                    "EEE, MMM d, h:mm a, yyyy"
+                  )}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Product Movement
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">Total Items:</span>
+                <span>{report.items_count}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Delivery:</span>
+                <span>{report.products_with_delivery}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Transfer:</span>
+                <span>{report.products_with_transfer}</span>
+              </p>
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">With Pull Out:</span>
+                <span>{report.products_with_pullout}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="border rounded-lg p-4 shadow-sm">
+            <h2 className="font-semibold mb-3 text-lg border-b pb-2">
+              Sales Information
+            </h2>
+            <div className="space-y-2">
+              <p className="flex justify-between">
+                <span className="text-muted-foreground">
+                  Products with Offtake:
+                </span>
+                <span>{report.products_with_offtake}</span>
+              </p>
+              <p className="flex justify-between font-medium text-lg mt-4">
+                <span>Total Offtake Value:</span>
+                <span>
+                  {new Intl.NumberFormat("en-PH", {
+                    style: "currency",
+                    currency: "PHP",
+                  }).format(report.total_offtake_value)}
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 

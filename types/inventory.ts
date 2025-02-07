@@ -46,4 +46,5 @@ export interface InventoryReport {
   items_count: number;
   branch_name: string;
   isUnviewed?: boolean;
+  total_offtake_value: number;
 }

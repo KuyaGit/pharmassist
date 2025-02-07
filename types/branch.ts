@@ -53,4 +53,5 @@ export interface BranchReportWithOfftakes extends BranchReport {
   }>;
   type?: string;
   created_at: string;
+  total_offtake_value: number;
 }
