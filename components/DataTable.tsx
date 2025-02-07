@@ -97,18 +97,18 @@ export function DataTable<TData, TValue>({
     getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
     getFilteredRowModel: enableFiltering ? getFilteredRowModel() : undefined,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const searchValue = filterValue.toLowerCase();
+      const searchTerms = filterValue.toLowerCase().split(" ");
       if (!filterColumn) return true;
 
       if (Array.isArray(filterColumn)) {
         return filterColumn.some((column) => {
-          const value = row.getValue(column);
-          return String(value).toLowerCase().includes(searchValue);
+          const value = String(row.getValue(column)).toLowerCase();
+          return searchTerms.every((term: string) => value.includes(term));
         });
       }
 
-      const value = row.getValue(filterColumn);
-      return String(value).toLowerCase().includes(searchValue);
+      const value = String(row.getValue(filterColumn)).toLowerCase();
+      return searchTerms.every((term: string) => value.includes(term));
     },
     state: {
       sorting,
