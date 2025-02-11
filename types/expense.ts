@@ -6,6 +6,7 @@ export enum ExpenseType {
   RENT = "rent",
   MARKETING = "marketing",
   INVENTORY = "inventory",
+  TRANSPORTATION = "transportation",
   OTHERS = "others",
 }
 
@@ -25,8 +26,6 @@ export interface Expense {
   name: string;
   type: ExpenseType;
   amount: number;
-  description: string | null;
-  vendor: string | null;
   scope: ExpenseScope;
   branch_id: number | null;
   date_created: string;

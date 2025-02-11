@@ -98,8 +98,6 @@ export default function Expenses() {
     name: "",
     type: ExpenseType.UTILITIES,
     amount: 0,
-    description: "",
-    vendor: "",
     scope: ExpenseScope.BRANCH,
     branch_id: null,
     date_created: format(new Date(), "yyyy-MM-dd"),
@@ -233,10 +231,6 @@ export default function Expenses() {
       cell: ({ row }) =>
         format(new Date(row.getValue("date_created")), "MMM d, yyyy"),
     },
-    {
-      accessorKey: "vendor",
-      header: "Vendor",
-    },
   ];
 
   const handleCreateExpense = async (e: React.FormEvent) => {
@@ -336,8 +330,6 @@ export default function Expenses() {
       name: "",
       type: ExpenseType.UTILITIES,
       amount: 0,
-      description: "",
-      vendor: "",
       scope: ExpenseScope.BRANCH,
       branch_id: null,
       date_created: format(new Date(), "yyyy-MM-dd"),
@@ -533,22 +525,6 @@ export default function Expenses() {
                       />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                      <Label htmlFor="vendor" className="text-right">
-                        Vendor
-                      </Label>
-                      <Input
-                        id="vendor"
-                        value={newExpense.vendor || ""}
-                        onChange={(e) =>
-                          setNewExpense({
-                            ...newExpense,
-                            vendor: e.target.value,
-                          })
-                        }
-                        className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="date" className="text-right">
                         Date
                       </Label>
@@ -563,23 +539,6 @@ export default function Expenses() {
                           })
                         }
                         className="col-span-3"
-                      />
-                    </div>
-                    <div className="grid grid-cols-4 items-start gap-4">
-                      <Label htmlFor="description" className="text-right pt-2">
-                        Description
-                      </Label>
-                      <textarea
-                        id="description"
-                        value={newExpense.description || ""}
-                        onChange={(e) =>
-                          setNewExpense({
-                            ...newExpense,
-                            description: e.target.value,
-                          })
-                        }
-                        className="col-span-3 min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        placeholder="Enter expense description..."
                       />
                     </div>
                   </div>
@@ -724,8 +683,8 @@ export default function Expenses() {
                 enableFiltering
                 enableSorting
                 enableColumnVisibility
-                filterColumn={["name", "vendor"]}
-                filterPlaceholder="Search by expense name or vendor..."
+                filterColumn={["name"]}
+                filterPlaceholder="Search by expense name..."
                 contextMenuOptions={(row: Expense) => [
                   {
                     label: "Edit",
@@ -870,25 +829,6 @@ export default function Expenses() {
                               ? "Main Office"
                               : "Company Wide"}
                           </div>
-                        </div>
-                        <div>
-                          <Label className="text-sm text-muted-foreground">
-                            Vendor
-                          </Label>
-                          <div className="mt-1 text-lg font-medium">
-                            {selectedExpenseForView.vendor || "N/A"}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="rounded-lg border p-4">
-                        <Label className="text-sm text-muted-foreground">
-                          Description
-                        </Label>
-                        <div className="mt-2 whitespace-pre-wrap">
-                          {selectedExpenseForView.description ||
-                            "No description provided"}
                         </div>
                       </div>
                     </div>
