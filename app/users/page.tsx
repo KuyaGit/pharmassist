@@ -42,6 +42,7 @@ import {
   Users as UsersIcon,
   Store,
   Building2,
+  Loader2,
 } from "lucide-react";
 import { Row } from "@tanstack/react-table";
 import {
@@ -108,6 +109,8 @@ export default function Users() {
   );
   const [showPassword, setShowPassword] = useState(false);
   const [initialPassword, setInitialPassword] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -303,6 +306,76 @@ export default function Users() {
       toast.error(
         error instanceof Error ? error.message : "Failed to reset password"
       );
+    }
+  };
+
+  const handleBranchChange = (value: string) => {
+    if (!selectedUserForView) return;
+
+    const newBranchId = value === "null" ? null : parseInt(value);
+    if (newBranchId !== selectedUserForView.branch_id) {
+      setSelectedUserForView({
+        ...selectedUserForView,
+        branch_id: newBranchId,
+        branch: newBranchId
+          ? branches.find((b) => b.id === newBranchId)
+          : undefined,
+      });
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const handleUpdateUserBranch = async () => {
+    if (!selectedUserForView) return;
+
+    setIsUpdating(true);
+    try {
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      const response = await fetch(
+        `${API_BASE_URL}/auth/users/${selectedUserForView.id}/branch`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            branch_id: selectedUserForView.branch_id,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Failed to update user branch");
+      }
+
+      // Update the users list with the new branch assignment
+      setUsers(
+        users.map((user) =>
+          user.id === selectedUserForView.id
+            ? {
+                ...user,
+                branch_id: selectedUserForView.branch_id,
+                branch: selectedUserForView.branch,
+              }
+            : user
+        )
+      );
+
+      setHasUnsavedChanges(false);
+      toast.success("User branch updated successfully");
+    } catch (error) {
+      console.error("Error updating user branch:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update user branch"
+      );
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -697,31 +770,83 @@ export default function Users() {
                   </div>
 
                   {/* Branch Section */}
-                  {selectedUserForView.branch && (
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-medium">
-                        Branch Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-6">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">
-                            Branch Name
-                          </Label>
-                          <p className="font-medium">
-                            {selectedUserForView.branch.branch_name}
-                          </p>
+                  {selectedUserForView &&
+                    selectedUserForView.role !== "admin" && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-medium">
+                            Branch Information
+                          </h3>
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">
-                            Branch Type
-                          </Label>
-                          <p className="font-medium capitalize">
-                            {selectedUserForView.branch.branch_type}
-                          </p>
+                        <div className="grid gap-4 rounded-lg border bg-muted/50 p-4">
+                          <div className="space-y-2">
+                            <Label>Branch Assignment</Label>
+                            <Select
+                              value={
+                                selectedUserForView.branch_id?.toString() ||
+                                "null"
+                              }
+                              onValueChange={handleBranchChange}
+                            >
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="Select branch" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="null">No Branch</SelectItem>
+                                {branches
+                                  .filter(
+                                    (branch) =>
+                                      (selectedUserForView.role ===
+                                        "wholesaler" &&
+                                        branch.branch_type === "wholesale") ||
+                                      (selectedUserForView.role ===
+                                        "pharmacist" &&
+                                        branch.branch_type === "retail")
+                                  )
+                                  .map((branch) => (
+                                    <SelectItem
+                                      key={branch.id}
+                                      value={branch.id.toString()}
+                                    >
+                                      {branch.branch_name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground">
+                              {selectedUserForView.role === "wholesaler"
+                                ? "Can only be assigned to wholesale branches"
+                                : "Can only be assigned to retail branches"}
+                            </p>
+                          </div>
+                          {selectedUserForView.branch && (
+                            <div className="space-y-1 rounded-md bg-background p-3">
+                              <Label className="text-xs text-muted-foreground">
+                                Current Branch Type
+                              </Label>
+                              <p className="font-medium capitalize">
+                                {selectedUserForView.branch.branch_type}
+                              </p>
+                            </div>
+                          )}
+                          {hasUnsavedChanges && (
+                            <Button
+                              onClick={handleUpdateUserBranch}
+                              disabled={isUpdating}
+                            >
+                              {isUpdating ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Updating...
+                                </>
+                              ) : (
+                                "Save Changes"
+                              )}
+                            </Button>
+                          )}
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
                   {/* Password Management Section */}
                   <div className="space-y-4">

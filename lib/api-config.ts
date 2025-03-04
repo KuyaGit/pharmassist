@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: (id: number) => `/auth/reset-password/${id}`,
     LIST_USERS: "/auth/users",
     UPDATE_INITIAL_CREDENTIALS: "/auth/initial-credentials",
+    UPDATE_USER_BRANCH: (id: number) => `/auth/users/${id}/branch`,
   },
   BRANCHES: {
     LIST: "/branches/",
